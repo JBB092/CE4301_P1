@@ -7,6 +7,12 @@
 *.obj
 *.bc
 
+### idea ###
+.idea/
+
+### vscode ###
+.vscode/
+
 ### C ###
 # Prerequisites
 *.d
