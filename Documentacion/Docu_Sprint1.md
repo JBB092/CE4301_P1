@@ -103,7 +103,7 @@ CE4301_P1/
    4. **Ejecución en QEMU** de un programa bare-metal.
    5. **DEpuración en GDB:**
       - Inspección de bloques de texto plano, cifrado y descifrado.
-      - Validación de la bandera `g.ok` con valor `0x600D600D` indicando éxito.
+      - Validación de la bandera `g_ok` con valor `0x600D600D` indicando éxito.
    6. **Validación final:** se confirmó que `decrypt(encrypt(x)) == x`.
 
 7. **Estado final**  
