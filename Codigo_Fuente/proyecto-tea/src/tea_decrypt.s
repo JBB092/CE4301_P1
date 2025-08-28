@@ -1,5 +1,5 @@
     .section .text
-    .global tea_decrypt
+    .global tea_decrypt_asm
     .align 2
 
 # void tea_decrypt(uint32_t v[2], const uint32_t key[4])
