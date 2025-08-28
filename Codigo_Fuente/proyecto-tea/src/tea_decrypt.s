@@ -6,7 +6,7 @@
 # a0 = v (puntero a bloque de 2 words)
 # a1 = key (puntero a clave de 4 words)
 
-tea_decrypt:
+tea_decrypt_asm:
     addi sp, sp, -16        # reservar stack frame
     sw   ra, 12(sp)         # guardar return address
     sw   s0, 8(sp)          # guardar s0
