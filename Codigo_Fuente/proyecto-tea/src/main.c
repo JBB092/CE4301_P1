@@ -30,13 +30,13 @@ int main(void) {
 
     /* Copia de trabajo para cifrar */
     uint32_t v[2] = { g_plain[0], g_plain[1] };
-    tea_encrypt(v, KEY);
+    tea_encrypt_asm(v, KEY);              // redirige a ASM si se compila con -DTEA_USE_ASM
     g_encrypted[0] = v[0];
     g_encrypted[1] = v[1];
 
     /* Copia de trabajo para descifrar */
     uint32_t w[2] = { g_encrypted[0], g_encrypted[1] };
-    tea_decrypt(w, KEY);
+    tea_decrypt_asm(w, KEY);              // redirige a ASM con -DTEA_USE_ASM
     g_decrypted[0] = w[0];
     g_decrypted[1] = w[1];
 
@@ -51,6 +51,5 @@ int main(void) {
     for (;;)
         ;
 
-    /* Nunca llega aquí */
-    // return 0;
+    // return 0; // nunca llega
 }
