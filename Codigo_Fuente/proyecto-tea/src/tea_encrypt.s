@@ -5,7 +5,7 @@
 # void tea_encrypt_asm(uint32_t v[2], const uint32_t key[4])
 # a0 = v
 # a1 = key
-# Convención: usamos solo caller-saved (t0–t6, a2–a7). Sin stack frame.
+# Convención: usar solo caller-saved (t0–t6, a2–a7), sin stack frame
 
 tea_encrypt_asm:
     # Cargar bloque v
@@ -26,7 +26,7 @@ tea_encrypt_asm:
 1:  # loop_encrypt
     add     a2, a2, t6         # sum += DELTA
 
-    # --- v0 += ((v1<<4)+k0) ^ (v1+sum) ^ ((v1>>5)+k1)
+    # v0 += ((v1<<4)+k0) ^ (v1+sum) ^ ((v1>>5)+k1)
     sll     a4, t1, 4          # (v1 << 4)
     add     a4, a4, t2         # (v1 << 4) + key0
     add     a5, t1, a2         # (v1 + sum)
@@ -36,7 +36,7 @@ tea_encrypt_asm:
     xor     a4, a4, a5
     add     t0, t0, a4         # v0 += expr
 
-    # --- v1 += ((v0<<4)+k2) ^ (v0+sum) ^ ((v0>>5)+k3)
+    # v1 += ((v0<<4)+k2) ^ (v0+sum) ^ ((v0>>5)+k3)
     sll     a4, t0, 4
     add     a4, a4, t4         # + key2
     add     a5, t0, a2         # (v0 + sum)
