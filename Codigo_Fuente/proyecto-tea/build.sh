@@ -2,6 +2,7 @@
 # Build script para proyecto TEA (Sprint 2 - Task 4)
 
 # Limpiar archivos objeto y ejecutable previos para evitar mezclas
+echo "Limpiando archivos objeto y ejecutable previos..."
 rm -f startup.o tea_decrypt.o tea_encrypt.o main.o test.elf
 
 echo "Compilando proyecto TEA con funciones ASM..."
