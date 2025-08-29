@@ -1,12 +1,12 @@
     .section .text
-    .global tea_decrypt
+    .global tea_decrypt_asm
     .align 2
 
 # void tea_decrypt(uint32_t v[2], const uint32_t key[4])
 # a0 = v (puntero a bloque de 2 words)
 # a1 = key (puntero a clave de 4 words)
 
-tea_decrypt:
+tea_decrypt_asm:
     addi sp, sp, -16        # reservar stack frame
     sw   ra, 12(sp)         # guardar return address
     sw   s0, 8(sp)          # guardar s0
