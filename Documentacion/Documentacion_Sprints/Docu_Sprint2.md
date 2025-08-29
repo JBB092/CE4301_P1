@@ -16,29 +16,29 @@ CE4301_P1/
 │       │   ├── tea.h
 │       │   ├── tea_encrypt.s # Implementación ASM (cifrado TEA)
 │       │   ├── tea_decrypt.s # Implementación ASM (descifrado TEA)
-│       │   └──startup.s # Código de arranque
-│       ├── linker.ld # Script de enlace
-│       ├── build.sh # Script de compilación
-│       ├── run-qemu.sh # Script para ejecutar QEMU
-│       ├── run.sh # Script para iniciar Docker/QEMU  
-│       └── test.elf # Binario generado
+│       │   └── startup.s     # Código de arranque
+│       ├── linker.ld         # Script de enlace
+│       ├── build.sh          # Script de compilación
+│       ├── run-qemu.sh       # Script para ejecutar QEMU
+│       ├── run.sh            # Script para iniciar Docker/QEMU  
+│       └── test.elf          # Binario generado
 └── Documentacion/
     ├── Documentacion_Sprints
     │   ├── Docu_Sprint1.md 
     │   └── Docu_Sprint2.md
-    └── README.md # Documentación final del proyecto
+    └── README.md             # Documentación final del proyecto
 ```
 
 ---
 
 ## 2. Implementación en ASM
 
-### Funciones migradas a ensamblador RISC-V
+### 2.1 Funciones migradas a ensamblador RISC-V
 
 Se implementaron las versiones en ASM del algoritmo TEA:
 
-- `tea_encrypt_asm`: realiza las 32 rondas de cifrado.
-- `tea_decrypt_asm`: realiza las 32 rondas de descifrado.
+- **`tea_encrypt_asm`**: realiza las 32 rondas de cifrado.
+- **`tea_decrypt_asm`**: realiza las 32 rondas de descifrado.
 
 Ambas funciones están definidas en los archivos `tea_encrypt.s` y `tea_decrypt.s` respectivamente, utilizando la convención de nombres:
 
@@ -49,7 +49,9 @@ Ambas funciones están definidas en los archivos `tea_encrypt.s` y `tea_decrypt.
 
 Esto evita colisiones con las funciones de C y resuelve errores de `multiple definition` y `undefined reference` durante el enlace.
 
-### Integración con main.c
+---
+
+### 2.2 Integración con `main.c`
 
 El flujo de prueba en `main.c` fue modificado para llamar directamente a las funciones en ensamblador cuando se compila con la macro `-DTEA_USE_ASM`. Esto se logra mediante directivas de compilación condicionales en el código fuente, permitiendo seleccionar entre la implementación en C o en ASM según la configuración de compilación.
 
@@ -71,15 +73,26 @@ De esta forma, el resto del código puede seguir llamando a `tea_encrypt` y `tea
 
 ---
 
+### 2.3 Control de nombres y conflictos
+
+Para evitar colisiones con las funciones de C, se usaron nombres distintos en ensamblador:
+
+- `.globl tea_encrypt_asm`
+- `.globl tea_decrypt_asm`
+
+Esto resolvió errores de *multiple definition* y de *undefined reference* durante el enlace.
+
+---
+
 ## 3. Scripts actualizados
 
-### build.sh
+### 3.1 `build.sh`
 
 - Se actualizó para compilar los archivos `tea_encrypt.s` y `tea_decrypt.s` junto con el resto del proyecto.
 - Se añadió la macro `-DTEA_USE_ASM` para habilitar las llamadas a las funciones en ASM.
 - Se agregó limpieza de objetos antiguos antes de compilar para evitar conflictos de enlace.
 
-Ejemplo de comandos relevantes en `build.sh`:
+**Ejemplo de comandos relevantes en `build.sh`:**
 
 ```bash
 rm -f *.o test.elf
@@ -90,12 +103,16 @@ riscv64-unknown-elf-gcc -DTEA_USE_ASM -c main.c -o main.o
 riscv64-unknown-elf-gcc -nostartfiles -T linker.ld *.o -o test.elf
 ```
 
-### run-qemu.sh y run.sh
+---
+
+### 3.2 `run-qemu.sh` y `run.sh`
 
 - Mantuvieron su función original: iniciar QEMU en modo bare-metal y permitir depuración con GDB.
 - No requirieron cambios estructurales para este sprint.
 
-### linker.ld y startup.s
+---
+
+### 3.3 `linker.ld` y `startup.s`
 
 - Mantuvieron la configuración establecida en el Sprint 1.
 - El punto de entrada sigue siendo `_start`, que realiza la inicialización de stack y el salto a `main`.
@@ -104,7 +121,7 @@ riscv64-unknown-elf-gcc -nostartfiles -T linker.ld *.o -o test.elf
 
 ## 4. Pruebas en QEMU + GDB
 
-### Compilación
+### 4.1 Compilación
 
 En el contenedor (terminal 1):
 
@@ -116,7 +133,9 @@ chmod +x build.sh
 
 Esto genera el archivo `test.elf` a partir de `main.c`, `tea.c`, `startup.s` y `linker.ld`, incluyendo ahora las implementaciones en ASM del cifrado y descifrado.
 
-### Ejecución y depuración
+---
+
+### 4.2 Ejecución y depuración
 
 **Paso 1: Iniciar QEMU con servidor GDB**  
 En la primera terminal (dentro del contenedor):
@@ -147,9 +166,11 @@ continue
 
 Con esto basta para poder empezar a depurar el código C.
 
-### Comandos útiles de depuración
+---
 
-- Ver bloques de memoria:
+### 4.3 Comandos útiles de depuración
+
+- **Ver bloques de memoria:**
 
   ```bash
   x/4wx &g_plain        # Texto plano
@@ -158,7 +179,7 @@ Con esto basta para poder empezar a depurar el código C.
   p/x g_ok              # Verificar bandera
   ```
 
-- Control de ejecución:
+- **Control de ejecución:**
 
   ```bash
   next          # Ejecutar siguiente instrucción en C
@@ -167,13 +188,37 @@ Con esto basta para poder empezar a depurar el código C.
   Ctrl+C        # Interrumpir ejecución (por loop infinito)
   ```
 
-### Resultados de pruebas
+---
+
+### 4.4 Resultados de pruebas
 
 Se verificó el correcto funcionamiento de las funciones en ASM mediante pruebas de cifrado y descifrado, confirmando que `decrypt(encrypt(x)) == x` para diversos valores de `x`.
 
 ---
 
-## 5. Resumen del Sprint 2
+## 5. Optimización de ASM
+
+1. **Uso de caller-saved registers (`t0–t6`, `a2–a7`)**  
+   Se eliminaron los *stack frames*, ya que las funciones ASM no llaman a otras.
+
+2. **Carga única de la clave**  
+   `key[0..3]` se cargan una sola vez en registros y se reutilizan en todas las rondas.
+
+3. **Inicialización directa del sum en descifrado**  
+   En `tea_decrypt_asm`, se cargó el valor inmediato `0xC6EF3720` en lugar de calcular `DELTA * 32` con multiplicación.
+
+4. **Loops más compactos**  
+   - Uso de `addi` y `bnez` para manejar el contador de rondas.
+   - Eliminación de instrucciones redundantes.
+
+5. **Resultados esperados**  
+   - Reducción de accesos a memoria.
+   - Menor número de instrucciones en el *hot loop*.
+   - Mayor eficiencia en simulación bajo QEMU.
+
+---
+
+## 6. Resumen del Sprint 2
 
 Durante este sprint se realizaron los siguientes pasos:
 
@@ -184,6 +229,6 @@ Durante este sprint se realizaron los siguientes pasos:
 
 ---
 
-## 6. Estado final
+## 7. Estado final
 
 El proyecto está correctamente configurado y ejecutándose en un entorno RISC-V bare-metal simulado con QEMU, validando con pruebas de cifrado y descifrado en GDB. Las funciones en ASM del algoritmo TEA están integradas y operativas, con un rendimiento mejorado en comparación con la implementación original en C.
