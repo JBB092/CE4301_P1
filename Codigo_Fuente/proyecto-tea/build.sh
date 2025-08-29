@@ -1,6 +1,9 @@
 #!/bin/bash
 # Build script para proyecto TEA (Sprint 2 - Task 4)
 
+# Limpiar archivos objeto y ejecutable previos para evitar mezclas
+rm -f startup.o tea_decrypt.o tea_encrypt.o main.o test.elf
+
 echo "Compilando proyecto TEA con funciones ASM..."
 
 USE_ASM=1   # 1 = usar ASM, 0 = usar implementación en C
