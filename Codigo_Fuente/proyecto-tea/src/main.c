@@ -3,17 +3,25 @@
 #include "tea.h"
 #include "padding.h"   // integración del padding PKCS#7
 
+/* CONFIGURACIÓN DEL TEST */
+
+/* Cambia aquí el mensaje de prueba */
+static const uint8_t MSG[] = "Mensaje de prueba para TEA";   // cambiar mensaje por cualquiera
+static const size_t MSG_LEN = sizeof(MSG) - 1; // quitar '\0'
+
 /* Clave de 128 bits (4 x 32 bits) */
 static const uint32_t KEY[4] = {
     0x12345678u, 0x9ABCDEF0u, 0xFEDCBA98u, 0x76543210u
 };
 
-/* Variables globales para inspección con GDB */
+/* VARIABLES GLOBALES */
 volatile uint8_t g_plain[32];       // mensaje original con padding (máx 32 bytes de prueba)
-volatile uint8_t g_encrypted[32];   // mensaje cifrado (múltiplo de 8)
+volatile uint8_t g_encrypted[32];   // mensaje cifrado
 volatile uint8_t g_decrypted[32];   // mensaje descifrado (con padding)
 volatile uint8_t g_unpadded[32];    // mensaje final después de quitar padding
 volatile uint32_t g_ok;             // bandera de verificación
+
+/* FUNCIONES AUXILIARES */
 
 /* Empaqueta 4 bytes en un uint32_t en orden little-endian */
 static inline uint32_t pack_le(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
@@ -31,13 +39,11 @@ static inline void unpack_le(uint32_t w, uint8_t *out) {
     out[3] = (uint8_t)((w >> 24) & 0xFF);
 }
 
-int main(void) {
-    /* Mensaje de prueba (ejemplo múltiple de bloques con padding) */
-    const uint8_t msg[] = "HOLA1234";  // 8 bytes exactos
-    const size_t msg_len = sizeof(msg) - 1; // quitar '\0'
+/* PROGRAMA PRINCIPAL */
 
+int main(void) {
     /* --- 1. Aplicar padding --- */
-    size_t padded_len = pkcs7_pad(msg, msg_len, 8, (uint8_t*)g_plain);
+    size_t padded_len = pkcs7_pad(MSG, MSG_LEN, 8, (uint8_t*)g_plain);
 
     /* --- 2. Cifrar bloque por bloque (8 bytes = 2 words de 32 bits) --- */
     for (size_t i = 0; i < padded_len; i += 8) {
@@ -68,7 +74,7 @@ int main(void) {
 
     /* --- 5. Verificación --- */
     g_ok = 0xDEADDEADu; // asume error por defecto
-    if (unpadded_len == msg_len) {
+    if (unpadded_len == MSG_LEN) {
         g_ok = 0x600D600Du;   // "GOOD"
     }
 
