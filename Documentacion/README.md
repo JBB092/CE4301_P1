@@ -3,9 +3,45 @@
 
 ## 1. Introducción
 
-* **1.1 Objetivo del proyecto**
-* **1.2 Alcance de la implementación**
-* **1.3 Tecnologías y herramientas utilizadas** (C, ensamblador, GDB, QEMU, Makefile, etc.)
+### 1.1 Objetivo del proyecto
+
+El objetivo principal de este proyecto fue **diseñar e implementar un sistema simple en arquitectura RISC-V**, combinando código en **C** y **ensamblador**, con el fin de comprender cómo interactúan ambos lenguajes a bajo nivel dentro de un flujo de ejecución controlado.
+Se buscó, además, aplicar herramientas de depuración y emulación como **GDB** y **QEMU**, para validar el comportamiento del programa, analizar el manejo de registros y memoria, y documentar las decisiones de diseño adoptadas en la implementación.
+
+### 1.2 Alcance de la implementación
+
+El proyecto abarca la construcción de un flujo completo de desarrollo en ambiente controlado:
+
+* **Diseño de la solución** dividiendo la lógica entre C y ensamblador, de acuerdo con las fortalezas de cada lenguaje.
+* **Compilación y enlace** utilizando scripts `.sh`, un archivo de enlazado personalizado `.ld`, y la generación de archivos intermedios (`.o`) y ejecutables (`.elf`).
+* **Ejecución en emulación** sobre la plataforma **QEMU RISC-V**, lo que permitió validar la portabilidad sin depender de hardware físico.
+* **Depuración** a través de **GDB**, verificando el estado de registros, memoria y el flujo de ejecución.
+* **Automatización** del proceso mediante el uso de **Docker** y **Makefiles**, asegurando un entorno de desarrollo reproducible.
+
+Este alcance se limitó a la implementación funcional del sistema y a la validación de su comportamiento en emulación. No se contempló la ejecución en hardware físico ni optimizaciones avanzadas de rendimiento, aunque dichas extensiones podrían abordarse como mejoras futuras.
+
+### 1.3 Tecnologías y herramientas utilizadas
+
+El desarrollo se apoyó en un conjunto de herramientas y tecnologías que permitieron integrar tanto la parte de software como el flujo de compilación y pruebas:
+
+* **Lenguajes de programación:**
+
+  * **C** → para la lógica de alto nivel.
+  * **Ensamblador RISC-V** → para secciones críticas de bajo nivel.
+
+* **Archivos de soporte:**
+
+  * **`.sh`** → scripts para automatizar compilación y ejecución.
+  * **`.ld`** → archivo de enlazado para gestionar la organización en memoria.
+  * **`.o`** → archivos objeto generados durante la compilación.
+  * **`.elf`** → ejecutable final para la arquitectura RISC-V.
+
+* **Herramientas principales:**
+
+  * **QEMU** → emulación de la arquitectura RISC-V.
+  * **GDB** → depuración paso a paso del sistema.
+  * **Docker** → contenedor para reproducir el entorno de desarrollo.
+  * **Makefile** → automatización de compilación y ejecución.
 
 ---
 
