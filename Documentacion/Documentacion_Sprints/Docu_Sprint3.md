@@ -1,4 +1,3 @@
-```markdown
 # Documentación Sprint 3 – Implementación de Padding PKCS#7 y Pruebas con Mensajes Múltiples
 
 Este documento resume los pasos realizados en el **Sprint 3**, incluyendo la implementación del esquema de padding **PKCS#7**, la integración con el proyecto TEA en C/ASM, y la validación mediante pruebas con diferentes mensajes y claves. Se realizaron modificaciones al flujo de cifrado/descifrado para soportar múltiples bloques y se documentaron los resultados experimentales.
@@ -8,32 +7,30 @@ Este documento resume los pasos realizados en el **Sprint 3**, incluyendo la imp
 ## 1. Estructura del proyecto
 
 ```
-
-CE4301\_P1/
-├── Codigo\_Fuente/
+CE4301_P1/
+├── Codigo_Fuente/
 │   └── proyecto-tea/
-│       ├── src/ # Código fuente
+│       ├── src/                  # Código fuente
 │       │   ├── main.c
 │       │   ├── tea.c
 │       │   ├── tea.h
-│       │   ├── tea\_encrypt.s      # Implementación ASM (cifrado TEA)
-│       │   ├── tea\_decrypt.s      # Implementación ASM (descifrado TEA)
-│       │   ├── padding.c          # Implementación PKCS#7
-│       │   ├── padding.h          # Cabecera de PKCS#7
-│       │   └── startup.s          # Código de arranque
-│       ├── linker.ld              # Script de enlace
-│       ├── build.sh               # Script de compilación
-│       ├── run-qemu.sh            # Script para ejecutar QEMU
-│       ├── run.sh                 # Script para iniciar Docker/QEMU
-│       └── test.elf               # Binario generado
+│       │   ├── tea_encrypt.s     # Implementación ASM (cifrado TEA)
+│       │   ├── tea_decrypt.s     # Implementación ASM (descifrado TEA)
+│       │   ├── padding.c         # Implementación PKCS#7
+│       │   ├── padding.h         # Cabecera de PKCS#7
+│       │   └── startup.s         # Código de arranque
+│       ├── linker.ld             # Script de enlace
+│       ├── build.sh              # Script de compilación
+│       ├── run-qemu.sh           # Script para ejecutar QEMU
+│       ├── run.sh                # Script para iniciar Docker/QEMU
+│       └── test.elf              # Binario generado
 └── Documentacion/
-├── Documentacion\_Sprints
-│   ├── Docu\_Sprint1.md
-│   ├── Docu\_Sprint2.md
-│   └── Docu\_Sprint3.md  # Este documento
-└── README.md            # Documentación final del proyecto
-
-``
+    ├── Documentacion_Sprints/
+    │   ├── Docu_Sprint1.md
+    │   ├── Docu_Sprint2.md
+    │   └── Docu_Sprint3.md       # Este documento
+    └── README.md                 # Documentación final del proyecto
+```
 
 ---
 
@@ -41,31 +38,32 @@ CE4301\_P1/
 
 ### 2.1 ¿Qué es PKCS#7?
 
-El padding **PKCS#7** es un esquema estándar usado en criptografía para rellenar mensajes de manera que su longitud sea múltiplo del tamaño de bloque (en este caso, **8 bytes para TEA**).  
+El padding **PKCS#7** es un esquema estándar usado en criptografía para rellenar mensajes de manera que su longitud sea múltiplo del tamaño de bloque (en este caso, **8 bytes para TEA**).
 
-- Si al mensaje le faltan *N* bytes para completar el bloque, se agregan *N* bytes con el valor `N`.  
-- Si el mensaje ya es múltiplo del tamaño del bloque, se añade un bloque completo de padding con valor igual al tamaño del bloque.  
+- Si al mensaje le faltan *N* bytes para completar el bloque, se agregan *N* bytes con el valor `N`.
+- Si el mensaje ya es múltiplo del tamaño del bloque, se añade un bloque completo de padding con valor igual al tamaño del bloque.
 
-Ejemplo:  
-- Mensaje `"HOLA"` (4B) → relleno con `04 04 04 04`.  
-- Mensaje `"TEC"` (3B) → relleno con `05 05 05 05 05`.  
+**Ejemplo:**
+- Mensaje `"HOLA"` (4B) → relleno con `04 04 04 04`.
+- Mensaje `"TEC"` (3B) → relleno con `05 05 05 05 05`.
 
 ---
 
 ### 2.2 Archivos añadidos
 
-- **`padding.c`**: implementación de `pkcs7_pad` y `pkcs7_unpad`.  
-- **`padding.h`**: cabecera con prototipos de funciones.  
+- **`padding.c`**: implementación de `pkcs7_pad` y `pkcs7_unpad`.
+- **`padding.h`**: cabecera con prototipos de funciones.
 
 ---
 
 ### 2.3 Integración en `main.c`
 
-Se modificó el flujo de `main.c` para:  
-1. Aplicar **PKCS#7** al mensaje original.  
-2. Cifrar bloque por bloque (8B cada bloque).  
-3. Descifrar bloque por bloque.  
-4. Remover padding para recuperar el mensaje original.  
+Se modificó el flujo de `main.c` para:
+
+1. Aplicar **PKCS#7** al mensaje original.
+2. Cifrar bloque por bloque (8B cada bloque).
+3. Descifrar bloque por bloque.
+4. Remover padding para recuperar el mensaje original.
 
 Esto permite probar mensajes de **longitudes variables** y verificar que `decrypt(encrypt(x)) == x`.
 
@@ -130,28 +128,28 @@ No requirieron cambios, mantienen la lógica de ejecutar QEMU en modo bare-metal
 
 ### 5.1 Pruebas con múltiples mensajes (PKCS#7 + TEA)
 
-| # | Mensaje (input)                | `g_plain` (hex)                                                           | `g_encrypted` (hex)                                           | `g_decrypted` (hex)                                                       | `g_unpadded` (hex)                                                | Bandera      |
-| - | ------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------ |
-| 1 | `"HOLA"` (4B)                  | `48 4F 4C 41 04 04 04 04`                                                 | `0F 93 D3 2F 19 AE 43 1F`                                     | `48 4F 4C 41 04 04 04 04`                                                 | `48 4F 4C 41`                                                     | `0x600D600D` |
-| 2 | `"TEC"` (3B)                   | `54 45 43 05 05 05 05 05`                                                 | `93 89 D5 3B 18 FA 9A D6`                                     | `54 45 43 05 05 05 05 05`                                                 | `54 45 43`                                                        | `0x600D600D` |
-| 3 | `"EMBEBIDOS"` (9B)             | `45 4D 42 45 42 49 44 4F 53 07 07 07 07 07 07 07`                         | `7E 4D 86 4F 73 7F 24 B3 1C C1 A8 2C AB 35 E2 94`             | `45 4D 42 45 42 49 44 4F 53 07 07 07 07 07 07 07`                         | `45 4D 42 45 42 49 44 4F 53`                                      | `0x600D600D` |
-| 4 | `"MICROCONTROLADOR"` (16B)     | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52 08 08 08 08 08 08 08 08` | `26 BB 42 80 90 13 22 0B 3D 80 C2 6D CF 5D EF 88 BD FE 1F CE` | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52 08 08 08 08 08 08 08 08` | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52`                 | `0x600D600D` |
-| 5 | `"Mensaje de prueba para TEA"` | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...`         | `CC 74 BD C4 6E 97 0E D8 FA 26 50 79 BA CF 26 3A 4F 58 F1 4E` | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...`         | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...` | `0x600D600D` |
+| #  | Mensaje (input)                | `g_plain` (hex)                                                           | `g_encrypted` (hex)                                           | `g_decrypted` (hex)                                                       | `g_unpadded` (hex)                                                | Bandera      |
+|----|------------------------------- |---------------------------------------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------------------|-------------------------------------------------------------------|--------------|
+| 1  | `"HOLA"` (4B)                  | `48 4F 4C 41 04 04 04 04`                                                 | `0F 93 D3 2F 19 AE 43 1F`                                     | `48 4F 4C 41 04 04 04 04`                                                 | `48 4F 4C 41`                                                     | `0x600D600D` |
+| 2  | `"TEC"` (3B)                   | `54 45 43 05 05 05 05 05`                                                 | `93 89 D5 3B 18 FA 9A D6`                                     | `54 45 43 05 05 05 05 05`                                                 | `54 45 43`                                                        | `0x600D600D` |
+| 3  | `"EMBEBIDOS"` (9B)             | `45 4D 42 45 42 49 44 4F 53 07 07 07 07 07 07 07`                         | `7E 4D 86 4F 73 7F 24 B3 1C C1 A8 2C AB 35 E2 94`             | `45 4D 42 45 42 49 44 4F 53 07 07 07 07 07 07 07`                         | `45 4D 42 45 42 49 44 4F 53`                                      | `0x600D600D` |
+| 4  | `"MICROCONTROLADOR"` (16B)     | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52 08 08 08 08 08 08 08 08` | `26 BB 42 80 90 13 22 0B 3D 80 C2 6D CF 5D EF 88 BD FE 1F CE` | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52 08 08 08 08 08 08 08 08` | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52`                 | `0x600D600D` |
+| 5  | `"Mensaje de prueba para TEA"` | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...`         | `CC 74 BD C4 6E 97 0E D8 FA 26 50 79 BA CF 26 3A 4F 58 F1 4E` | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...`         | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...` | `0x600D600D` |
 
 ---
 
 ### 5.2 Pruebas con distintos valores de la clave `KEY`
 
-| Nº | Clave KEY\[4] (hexadecimal)                      | Bloque cifrado (g\_encrypted) | Bloque descifrado (g\_decrypted) | Mensaje  |
-| -- | ------------------------------------------------ | ----------------------------- | -------------------------------- | -------- |
-| 1  | {0x12345678, 0x9ABCDEF0, 0xFEDCBA98, 0x76543210} | da21c31f 5e98b1fd             | 414c4f48 34333231                | HOLA1234 |
-| 2  | {0x11111111, 0x22222222, 0x33333333, 0x44444444} | abb05714 61a3d03e             | 414c4f48 34333231                | HOLA1234 |
-| 3  | {0xAAAAAAAA, 0xBBBBBBBB, 0xCCCCCCCC, 0xDDDDDDDD} | 0cd183b4 33097069             | 414c4f48 34333231                | HOLA1234 |
-| 4  | {0x00000000, 0x00000000, 0x00000000, 0x00000000} | c1820dd0 2123308b             | 414c4f48 34333231                | HOLA1234 |
-| 5  | {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF} | c1820dd0 2123308b             | 414c4f48 34333231                | HOLA1234 |
-| 6  | {0x0F0F0F0F, 0xF0F0F0F0, 0x00FF00FF, 0xFF00FF00} | f7608b36 66342441             | 414c4f48 34333231                | HOLA1234 |
-| 7  | {0xDEADBEEF, 0xCAFEBABE, 0xFEEDFACE, 0x0BADC0DE} | 5c8ce9b5 0b7bf277             | 414c4f48 34333231                | HOLA1234 |
-| 8  | {0x01234567, 0x89ABCDEF, 0x76543210, 0xFEDCBA98} | 12c2e19b d3fa2f77             | 414c4f48 34333231                | HOLA1234 |
+| Nº | Clave KEY\[4] (hexadecimal)                      | Bloque cifrado (g_encrypted) | Bloque descifrado (g_decrypted) | Mensaje   |
+|----|--------------------------------------------------|------------------------------|----------------------------------|-----------|
+| 1  | {0x12345678, 0x9ABCDEF0, 0xFEDCBA98, 0x76543210} | da21c31f 5e98b1fd            | 414c4f48 34333231                | HOLA1234  |
+| 2  | {0x11111111, 0x22222222, 0x33333333, 0x44444444} | abb05714 61a3d03e            | 414c4f48 34333231                | HOLA1234  |
+| 3  | {0xAAAAAAAA, 0xBBBBBBBB, 0xCCCCCCCC, 0xDDDDDDDD} | 0cd183b4 33097069            | 414c4f48 34333231                | HOLA1234  |
+| 4  | {0x00000000, 0x00000000, 0x00000000, 0x00000000} | c1820dd0 2123308b            | 414c4f48 34333231                | HOLA1234  |
+| 5  | {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF} | c1820dd0 2123308b            | 414c4f48 34333231                | HOLA1234  |
+| 6  | {0x0F0F0F0F, 0xF0F0F0F0, 0x00FF00FF, 0xFF00FF00} | f7608b36 66342441            | 414c4f48 34333231                | HOLA1234  |
+| 7  | {0xDEADBEEF, 0xCAFEBABE, 0xFEEDFACE, 0x0BADC0DE} | 5c8ce9b5 0b7bf277            | 414c4f48 34333231                | HOLA1234  |
+| 8  | {0x01234567, 0x89ABCDEF, 0x76543210, 0xFEDCBA98} | 12c2e19b d3fa2f77            | 414c4f48 34333231                | HOLA1234  |
 
 ---
 
