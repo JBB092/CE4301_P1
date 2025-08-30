@@ -38,14 +38,16 @@ CE4301_P1/
 
 ### 2.1 ¿Qué es PKCS#7?
 
-El padding **PKCS#7** es un esquema estándar usado en criptografía para rellenar mensajes de manera que su longitud sea múltiplo del tamaño de bloque (en este caso, **8 bytes para TEA**).
+El padding **PKCS#7** es un esquema estándar usado en criptografía para rellenar mensajes de manera que su longitud sea múltiplo del tamaño de bloque (en este caso, **8 bytes para TEA**) [1].
 
-- Si al mensaje le faltan *N* bytes para completar el bloque, se agregan *N* bytes con el valor `N`.
-- Si el mensaje ya es múltiplo del tamaño del bloque, se añade un bloque completo de padding con valor igual al tamaño del bloque.
+- Si al mensaje le faltan *N* bytes para completar el bloque, se agregan *N* bytes con el valor `N` [1].
+- Si el mensaje ya es múltiplo del tamaño del bloque, se añade un bloque completo de padding con valor igual al tamaño del bloque [1].
 
 **Ejemplo:**
 - Mensaje `"HOLA"` (4B) → relleno con `04 04 04 04`.
 - Mensaje `"TEC"` (3B) → relleno con `05 05 05 05 05`.
+
+Este método está definido formalmente en el estándar **RFC 5652 (Cryptographic Message Syntax - CMS)**, el cual describe cómo realizar el relleno PKCS#7 para algoritmos de bloque [1].
 
 ---
 
@@ -181,3 +183,6 @@ Durante este sprint se realizaron los siguientes pasos:
 ## 8. Estado final
 
 El proyecto ahora soporta mensajes de **longitudes arbitrarias** mediante el uso de **PKCS#7**. Todas las pruebas confirmaron que `decrypt(encrypt(x)) == x` tras remover el padding, validando la correcta integración del esquema de relleno y su interoperabilidad con la implementación TEA en ASM.
+
+## Referencias
+[1] Housley, R. (2009). *RFC 5652: Cryptographic Message Syntax (CMS)*. Internet Engineering Task Force (IETF). Disponible en: https://www.rfc-editor.org/rfc/rfc5652 
