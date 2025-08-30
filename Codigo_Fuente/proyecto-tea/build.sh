@@ -37,6 +37,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Compilar padding.c
+riscv64-unknown-elf-gcc \
+    -march=rv32im \
+    -mabi=ilp32 \
+    -nostdlib \
+    -ffreestanding \
+    -g3 -gdwarf-4 \
+    -c src/padding.c -o padding.o
+
+if [ $? -ne 0 ]; then
+    echo "Error en la compilación de padding.c"
+    exit 1
+fi
+
 # Decidir qué compilar/enlazar según USE_ASM
 if [ "${USE_ASM}" -eq 0 ]; then
     echo "Usando implementación en C (tea.c)..."
@@ -97,13 +111,13 @@ riscv64-unknown-elf-gcc \
     -nostdlib \
     -ffreestanding \
     -g3 -gdwarf-4 \
-    startup.o main.o ${OBJ_EXTRA} \
+    startup.o main.o padding.o ${OBJ_EXTRA} \
     -T linker.ld \
     -o test.elf
 
 if [ $? -eq 0 ]; then
     echo "Compilación y enlace exitoso: test.elf generado"
-    echo "Archivos objeto: startup.o, main.o, ${OBJ_EXTRA}"
+    echo "Archivos objeto: startup.o, main.o, padding.o, ${OBJ_EXTRA}"
 else
     echo "Error en el enlace"
     exit 1
