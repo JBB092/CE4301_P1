@@ -49,8 +49,6 @@ El desarrollo se apoyó en un conjunto de herramientas y tecnologías que permit
 
 La arquitectura del sistema se diseñó bajo un esquema **modular y jerárquico**, donde el código en **C** se encargó de la lógica de más alto nivel, mientras que el **ensamblador RISC-V** gestionó operaciones de bajo nivel y control directo sobre registros y memoria. Esta separación permitió mantener claridad en la implementación, aprovechar la expresividad del lenguaje C y, al mismo tiempo, garantizar control fino sobre la arquitectura a través del ensamblador.
 
----
-
 ### 2.1 Separación entre capas C y ensamblador
 
 #### 2.1.1 Rol del código en C
@@ -80,8 +78,6 @@ La interacción entre el código C y ensamblador se basó en:
 * Uso de símbolos exportados en ensamblador y declarados en C como `extern`.
 * Proceso de compilación y enlace que integró ambas capas en el ejecutable final `.elf`.
 
----
-
 ### 2.2 Interfaces utilizadas
 
 #### 2.2.1 Funciones expuestas desde C hacia ASM (y viceversa)
@@ -103,8 +99,6 @@ Para garantizar compatibilidad, se respetó la **ABI RISC-V (Application Binary 
 
 Esto aseguró que el compilador pudiera enlazar sin conflictos y que el paso de datos entre C y ensamblador fuera consistente.
 
----
-
 ### 2.3 Decisiones de diseño y justificación
 
 #### 2.3.1 Elección de qué lógica implementar en C y cuál en ASM
@@ -123,8 +117,6 @@ Esto aseguró que el compilador pudiera enlazar sin conflictos y que el paso de 
 * Implementar todo el sistema únicamente en ensamblador → descartado por la complejidad, la pérdida de claridad y la dificultad en la depuración.
 * Implementar todo en C → descartado porque no habría exposición directa al bajo nivel, ni se lograría el objetivo del curso de practicar ensamblador RISC-V.
 * Uso de hardware físico → descartado por limitaciones de tiempo y costo, optando por **QEMU** como emulador confiable y portable.
-
----
 
 ### 2.4 Diagramas de Arquitectura y Flujo
 
@@ -188,8 +180,6 @@ El sistema implementa el **algoritmo de cifrado/descifrado TEA (Tiny Encryption 
 
 > **Por qué PKCS#7:** garantiza que el relleno sea **no ambiguo** y reversible, incluso cuando el mensaje ya es múltiplo del bloque (en ese caso se añade un bloque de 8 bytes con valor `0x08`), cumpliendo prácticas estándar de padding para cifrados por bloques [2].
 
----
-
 ### 3.2 Flujo de ejecución principal
 
 #### 3.2.1 Entrada de datos
@@ -229,8 +219,6 @@ El sistema implementa el **algoritmo de cifrado/descifrado TEA (Tiny Encryption 
   * **Texto descifrado** y verificación de igualdad con el mensaje original.
 * En depuración con GDB, se inspeccionan registros/memoria tras rondas clave y antes/después del despadding.
 
----
-
 ### 3.3 Casos de uso o escenarios de ejemplo
 
 1. **Mensaje no múltiplo de 8 (padding típico):**
@@ -249,9 +237,9 @@ El sistema implementa el **algoritmo de cifrado/descifrado TEA (Tiny Encryption 
    * Forzando un cambio en el último byte del ciphertext, el descifrado produce **padding no válido**.
    * La validación en C detecta el error y retorna código/estado de fallo (p. ej., `PKCS7_INVALID`), evitando usar datos corruptos.
 
----
-
 ### 3.4 Diagrama del flujo con PKCS#7 + TEA
+
+A continuación, se detalla un diagrama de flujo completo del sistema con padding y TEA.
 
 ```mermaid
 flowchart TD
@@ -263,8 +251,6 @@ flowchart TD
     F --> G["Validar ultimo byte y PKCS#7"]
     G --> H["Eliminar padding y recuperar mensaje original"]
 ```
-
----
 
 > **Notas de implementación útiles para la lectura del código:**
 >
@@ -280,8 +266,6 @@ flowchart TD
 En esta sección se presentan las evidencias de la correcta ejecución del sistema en QEMU y la depuración paso a paso con GDB.  
 Todas las capturas de pantalla se encuentran en la carpeta `./Media/` y se muestran en orden cronológico.
 
----
-
 ### 4.1 Ejecución en QEMU
 
 #### 4.1.1 Ejecución inicial
@@ -292,8 +276,6 @@ La Figura 1 muestra la salida obtenida al ejecutar el script `./run-qemu.sh`, do
 ![Figura 1. Ejecución del programa en QEMU](./Media/figura1.png)  
 
 Esto muestra el uso de QEMU para poder trabajar con GDB y depurar.
-
----
 
 ### 4.2 Depuración con GDB
 
@@ -310,8 +292,6 @@ La Figura 2 muestra la conexión exitosa entre GDB y QEMU.
 ![Figura 2. Conexión de GDB al puerto remoto de QEMU](./Media/figura2.png)  
 
 Se confirma la sincronización con el mensaje `Remote debugging using :1234`.
-
----
 
 #### 4.2.2 Establecimiento de breakpoints
 
@@ -330,8 +310,6 @@ La lista completa se muestra en la Figura 3, obtenida con el comando `info break
 ![Figura 3. Breakpoints definidos en funciones principales](./Media/figura3.png)  
 
 Estos breakpoints permiten detener la ejecución en los puntos más relevantes del ciclo de **padding, empaquetado, cifrado, desempaquetado, descifrado y eliminación del padding**, lo que facilita el análisis paso a paso del algoritmo completo.
-
----
 
 #### 4.2.3 Inspección de registros y memoria antes de la ejecución
 
@@ -355,8 +333,6 @@ La Figura 5 muestra el contenido de las variables en memoria antes del proceso d
 **Figura 5. Variables en memoria antes del cifrado**
 ![Figura 5. Variables en memoria antes del cifrado](./Media/figura5.png)
 
----
-
 #### 4.2.4 Inspección de registros y memoria después de la ejecución
 
 Luego de ejecutar completamente las funciones de cifrado y descifrado, se repitió la inspección.
@@ -371,8 +347,6 @@ La Figura 7 muestra las variables en memoria tras todo el proceso, evidenciando 
 **Figura 7. Variables en memoria después del cifrado y descifrado**
 ![Figura 7. Variables en memoria después del cifrado y descifrado](./Media/figura7.png)
 
----
-
 #### 4.2.5 Ejemplos con mensajes de distinta longitud
 
 Para validar el correcto funcionamiento del padding (PKCS#7), se probaron dos casos específicos:
@@ -385,8 +359,6 @@ La Figura 8 muestra la salida en memoria para las variables `g_plain`, `g_encryp
 ![Figura 8. Ejemplo con mensaje de 16 bytes ("MICROCONTROLADOR")](./Media/figura7.png)
 
 En este caso no se aplica padding adicional, ya que la longitud es múltiplo del bloque de 16 bytes.
-
----
 
 ##### Caso B: Mensaje de 3 bytes ("TEC")
 
@@ -421,8 +393,6 @@ Se realizaron pruebas con diferentes configuraciones de la clave de 128 bits uti
 **Discusión:**  
 La Tabla 1 demuestra que, sin importar la clave utilizada, el bloque descifrado coincide con el mensaje original (`HOLA1234`). Esto confirma que la implementación de TEA en conjunto con el padding PKCS#7 preserva la consistencia y confiabilidad del proceso de cifrado/descifrado. Los resultados cifrados son distintos debido a la variación de la clave, cumpliendo el objetivo de proporcionar seguridad.
 
----
-
 #### Tabla 2. Pruebas con múltiples mensajes (PKCS#7 + TEA)
 
 | #  | Mensaje (input)                | `g_plain` (hex)                                                           | `g_encrypted` (hex)                                           | `g_decrypted` (hex)                                                       | `g_unpadded` (hex)                                                | Bandera      |
@@ -444,9 +414,16 @@ La Tabla 2 muestra cómo el sistema maneja mensajes de distintos tamaños aplica
 
 Esto confirma la correcta integración del padding PKCS#7 con TEA en la implementación, garantizando que cualquier mensaje (sin importar su longitud) sea procesado de forma adecuada.
 
----
 
-### 5.2 Limitaciones actuales
+### 5.2 Rendimiento
+
+En cuanto al rendimiento, se observó que la implementación del algoritmo TEA en ensamblador proporcionó una ejecución eficiente dentro del entorno emulado de QEMU. Las operaciones de cifrado y descifrado se realizaron de manera fluida, sin retardos apreciables, lo que confirma la ligereza computacional del algoritmo. 
+
+El mecanismo de padding PKCS#7 no introdujo sobrecarga significativa, ya que las operaciones adicionales corresponden únicamente a escritura y validación de bytes al inicio y al final del flujo. 
+
+Si bien no se efectuaron pruebas de tiempo en ciclos de reloj reales, el entorno de depuración con GDB y los breakpoints definidos permitió un análisis ágil y sin comprometer la estabilidad del programa, cumpliendo así con los objetivos de validación funcional y práctica del sistema.
+
+### 5.3 Limitaciones actuales
 
 El proyecto, aunque funcional y correctamente probado en distintos escenarios, presenta algunas limitaciones que deben señalarse:
 
@@ -462,9 +439,7 @@ El proyecto, aunque funcional y correctamente probado en distintos escenarios, p
 - **Falta de integración con sistemas reales**:  
   Las pruebas se realizaron en un entorno controlado (QEMU + GDB). Aún no se ha probado en hardware embebido real (ej. ARM Cortex-M, ESP32), lo cual limita la validación práctica.
 
----
-
-### 5.3 Posibles mejoras futuras
+### 5.4 Posibles mejoras futuras
 
 Para fortalecer y ampliar el alcance del proyecto, se plantean las siguientes mejoras:
 
@@ -492,8 +467,6 @@ Para fortalecer y ampliar el alcance del proyecto, se plantean las siguientes me
 
 Esta sección explica el procedimiento completo para compilar, ejecutar y depurar el proyecto dentro de un contenedor Docker que utiliza QEMU y GDB.  
 
----
-
 ### 6.1 Requisitos previos
 
 Antes de ejecutar el proyecto, es necesario contar con lo siguiente instalado en la computadora:  
@@ -506,8 +479,6 @@ Dentro del archivo `main.c` se puede configurar tanto el mensaje a cifrar (bloqu
 
 **Figura 10. Configuración del mensaje y la `KEY` en `main.c`**
 ![Figura 10. Configuración del mensaje y la KEY en main.c](./Media/figura10.png)
-
----
 
 ### 6.2 Compilación y arranque del entorno
 
@@ -543,8 +514,6 @@ chmod +x ./run-qemu.sh
 **Figura 13. Ejecución del script `run-qemu.sh` para iniciar QEMU con GDB**
 ![Figura 13. Ejecución del script run-qemu.sh para iniciar QEMU con GDB](./Media/figura13.png)
 
----
-
 ### 6.3 Conexión a QEMU y arranque de GDB
 
 En otra terminal, dentro de la misma carpeta `proyecto-tea`, conectarse al contenedor que ya está corriendo:
@@ -571,8 +540,6 @@ target remote :1234
 **Figura 15. Conexión de GDB al puerto remoto de QEMU**
 ![Figura 15. Conexión de GDB al puerto remoto de QEMU](./Media/figura15.png)
 
----
-
 ### 6.4 Comandos útiles en GDB
 
 A continuación se listan los principales comandos usados durante la depuración:
@@ -594,8 +561,6 @@ A continuación se listan los principales comandos usados durante la depuración
 * `x/4wx &g_decrypted` → Visualiza el mensaje descifrado.
 * `x/4wx &g_unpadded` → Visualiza el mensaje tras la eliminación del padding.
 * `p/x g_ok` → Indica si la operación de cifrado/descifrado fue correcta.
-
----
 
 ### 6.5 Sesión de depuración con GDB
 
