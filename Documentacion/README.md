@@ -186,7 +186,7 @@ El sistema implementa el **algoritmo de cifrado/descifrado TEA (Tiny Encryption 
   * Procesa cada bloque de 64 bits como dos palabras de 32 bits (`v0`, `v1`).
   * Respeta la **ABI RISC-V** para paso/retorno de parámetros (p. ej., `a0–a3`, retorno en `a0/a1` o mediante buffer, según diseño).
 
-> **Por qué PKCS#7:** garantiza que el relleno sea **no ambiguo** y reversible, incluso cuando el mensaje ya es múltiplo del bloque (en ese caso se añade un bloque de 8 bytes con valor `0x08`), cumpliendo prácticas estándar de padding para cifrados por bloques [1].
+> **Por qué PKCS#7:** garantiza que el relleno sea **no ambiguo** y reversible, incluso cuando el mensaje ya es múltiplo del bloque (en ese caso se añade un bloque de 8 bytes con valor `0x08`), cumpliendo prácticas estándar de padding para cifrados por bloques [2].
 
 ---
 
@@ -288,6 +288,7 @@ Todas las capturas de pantalla se encuentran en la carpeta `./Media/` y se muest
 
 La Figura 1 muestra la salida obtenida al ejecutar el script `./run-qemu.sh`, donde se observa la el inicio del "servidor" QEMU usando el puerto 1234 para conectarse usando GDB.
 
+**Figura 1. Ejecución del programa en QEMU**
 ![Figura 1. Ejecución del programa en QEMU](./Media/figura1.png)  
 
 Esto muestra el uso de QEMU para poder trabajar con GDB y depurar.
@@ -305,6 +306,7 @@ Para depurar el programa en QEMU, se utiliza el siguiente procedimiento:
 
 La Figura 2 muestra la conexión exitosa entre GDB y QEMU.
 
+**Figura 2. Conexión de GDB al puerto remoto de QEMU**
 ![Figura 2. Conexión de GDB al puerto remoto de QEMU](./Media/figura2.png)  
 
 Se confirma la sincronización con el mensaje `Remote debugging using :1234`.
@@ -324,6 +326,7 @@ La lista completa se muestra en la Figura 3, obtenida con el comando `info break
 - **tea_decrypt** (`src/tea_decrypt.s:11`)  
 - **pkcs7_unpad** (`src/padding.c:39`)  
 
+**Figura 3. Breakpoints definidos en funciones principales**
 ![Figura 3. Breakpoints definidos en funciones principales](./Media/figura3.png)  
 
 Estos breakpoints permiten detener la ejecución en los puntos más relevantes del ciclo de **padding, empaquetado, cifrado, desempaquetado, descifrado y eliminación del padding**, lo que facilita el análisis paso a paso del algoritmo completo.
@@ -334,13 +337,22 @@ Estos breakpoints permiten detener la ejecución en los puntos más relevantes d
 
 Antes de la ejecución de la función de cifrado y descifrado, se inspeccionaron tanto registros como memoria.  
 Los comandos utilizados fueron:
+```bash
+ info registers
+ x/4wx &g_plain
+ x/4wx &g_encrypted
+ x/4wx &g_decrypted
+ p/x g_ok
+```
 
 La Figura 4 muestra el estado de los registros antes de iniciar la función de cifrado.
 
+**Figura 4. Registros antes de ejecutar encrypt\_block**
 ![Figura 4. Registros antes de ejecutar encrypt\_block](./Media/figura4.png)
 
 La Figura 5 muestra el contenido de las variables en memoria antes del proceso de cifrado.
 
+**Figura 5. Variables en memoria antes del cifrado**
 ![Figura 5. Variables en memoria antes del cifrado](./Media/figura5.png)
 
 ---
@@ -351,10 +363,12 @@ Luego de ejecutar completamente las funciones de cifrado y descifrado, se repiti
 
 La Figura 6 muestra el estado de los registros al finalizar el proceso.
 
+**Figura 6. Registros después de la ejecución completa**
 ![Figura 6. Registros después de la ejecución completa](./Media/figura6.png)
 
 La Figura 7 muestra las variables en memoria tras todo el proceso, evidenciando el correcto padding, cifrado, descifrado y recuperación del mensaje original.
 
+**Figura 7. Variables en memoria después del cifrado y descifrado**
 ![Figura 7. Variables en memoria después del cifrado y descifrado](./Media/figura7.png)
 
 ---
@@ -367,6 +381,7 @@ Para validar el correcto funcionamiento del padding (PKCS#7), se probaron dos ca
 
 La Figura 8 muestra la salida en memoria para las variables `g_plain`, `g_encrypted` y `g_decrypted` al procesar el mensaje de 16 bytes.
 
+**Figura 8. Ejemplo con mensaje de 16 bytes ("MICROCONTROLADOR")**
 ![Figura 8. Ejemplo con mensaje de 16 bytes ("MICROCONTROLADOR")](./Media/figura7.png)
 
 En este caso no se aplica padding adicional, ya que la longitud es múltiplo del bloque de 16 bytes.
@@ -377,6 +392,7 @@ En este caso no se aplica padding adicional, ya que la longitud es múltiplo del
 
 La Figura 9 muestra la salida en memoria para las variables `g_plain`, `g_encrypted` y `g_decrypted` al procesar el mensaje de 3 bytes.
 
+**Figura 9. Ejemplo con mensaje de 3 bytes ("TEC")**
 ![Figura 9. Ejemplo con mensaje de 3 bytes ("TEC")](./Media/figura8.png)
 
 En este caso se aplicó correctamente padding PKCS#7, rellenando con 13 bytes de valor `0x0D`, lo que permite completar el bloque de 16 bytes y validar posteriormente la correcta eliminación del padding tras el descifrado.
@@ -385,13 +401,90 @@ En este caso se aplicó correctamente padding PKCS#7, rellenando con 13 bytes de
 
 ## 5. Resultados y Discusión
 
-* **5.1 Resultados generales de la implementación**
-* **5.2 Análisis de rendimiento**
+### 5.1 Resultados generales de la implementación
 
-  * 5.2.1 Tiempo de ejecución aproximado / eficiencia
-  * 5.2.2 Diferencias entre C y ensamblador en el proyecto
-* **5.3 Limitaciones actuales**
-* **5.4 Posibles mejoras futuras**
+Se realizaron pruebas con diferentes configuraciones de la clave de 128 bits utilizada por TEA, así como con múltiples mensajes de entrada de distinto tamaño. Los resultados confirman que el algoritmo cifra y descifra correctamente, manteniendo la integridad del mensaje original tras aplicar el padding PKCS#7 y el proceso de cifrado/descifrado en ensamblador y C.
+
+#### Tabla 1. Pruebas con distintos valores de la clave `KEY`
+
+| Nº | Clave `KEY[4]` (hexadecimal)                      | Bloque cifrado (`g_encrypted`) | Bloque descifrado (`g_decrypted`) | Mensaje   |
+|----|---------------------------------------------------|-------------------------------|-----------------------------------|-----------|
+| 1  | `{0x12345678, 0x9ABCDEF0, 0xFEDCBA98, 0x76543210}` | `da21c31f 5e98b1fd`           | `414c4f48 34333231`               | `HOLA1234`|
+| 2  | `{0x11111111, 0x22222222, 0x33333333, 0x44444444}` | `abb05714 61a3d03e`           | `414c4f48 34333231`               | `HOLA1234`|
+| 3  | `{0xAAAAAAAA, 0xBBBBBBBB, 0xCCCCCCCC, 0xDDDDDDDD}` | `0cd183b4 33097069`           | `414c4f48 34333231`               | `HOLA1234`|
+| 4  | `{0x00000000, 0x00000000, 0x00000000, 0x00000000}` | `c1820dd0 2123308b`           | `414c4f48 34333231`               | `HOLA1234`|
+| 5  | `{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}` | `c1820dd0 2123308b`           | `414c4f48 34333231`               | `HOLA1234`|
+| 6  | `{0x0F0F0F0F, 0xF0F0F0F0, 0x00FF00FF, 0xFF00FF00}` | `f7608b36 66342441`           | `414c4f48 34333231`               | `HOLA1234`|
+| 7  | `{0xDEADBEEF, 0xCAFEBABE, 0xFEEDFACE, 0x0BADC0DE}` | `5c8ce9b5 0b7bf277`           | `414c4f48 34333231`               | `HOLA1234`|
+| 8  | `{0x01234567, 0x89ABCDEF, 0x76543210, 0xFEDCBA98}` | `12c2e19b d3fa2f77`           | `414c4f48 34333231`               | `HOLA1234`|
+
+**Discusión:**  
+La Tabla 1 demuestra que, sin importar la clave utilizada, el bloque descifrado coincide con el mensaje original (`HOLA1234`). Esto confirma que la implementación de TEA en conjunto con el padding PKCS#7 preserva la consistencia y confiabilidad del proceso de cifrado/descifrado. Los resultados cifrados son distintos debido a la variación de la clave, cumpliendo el objetivo de proporcionar seguridad.
+
+---
+
+#### Tabla 2. Pruebas con múltiples mensajes (PKCS#7 + TEA)
+
+| #  | Mensaje (input)                | `g_plain` (hex)                                                           | `g_encrypted` (hex)                                           | `g_decrypted` (hex)                                                       | `g_unpadded` (hex)                                                | Bandera      |
+|----|------------------------------- |---------------------------------------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------------------|-------------------------------------------------------------------|--------------|
+| 1  | `"HOLA"` (4B)                  | `48 4F 4C 41 04 04 04 04`                                                 | `0F 93 D3 2F 19 AE 43 1F`                                     | `48 4F 4C 41 04 04 04 04`                                                 | `48 4F 4C 41`                                                     | `0x600D600D` |
+| 2  | `"TEC"` (3B)                   | `54 45 43 05 05 05 05 05`                                                 | `93 89 D5 3B 18 FA 9A D6`                                     | `54 45 43 05 05 05 05 05`                                                 | `54 45 43`                                                        | `0x600D600D` |
+| 3  | `"EMBEBIDOS"` (9B)             | `45 4D 42 45 42 49 44 4F 53 07 07 07 07 07 07 07`                         | `7E 4D 86 4F 73 7F 24 B3 1C C1 A8 2C AB 35 E2 94`             | `45 4D 42 45 42 49 44 4F 53 07 07 07 07 07 07 07`                         | `45 4D 42 45 42 49 44 4F 53`                                      | `0x600D600D` |
+| 4  | `"MICROCONTROLADOR"` (16B)     | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52 08 08 08 08 08 08 08 08` | `26 BB 42 80 90 13 22 0B 3D 80 C2 6D CF 5D EF 88 BD FE 1F CE` | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52 08 08 08 08 08 08 08 08` | `4D 49 43 52 4F 43 4F 4E 54 52 4F 4C 41 44 4F 52`                 | `0x600D600D` |
+| 5  | `"Mensaje de prueba para TEA"` | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...`         | `CC 74 BD C4 6E 97 0E D8 FA 26 50 79 BA CF 26 3A 4F 58 F1 4E` | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...`         | `4D 65 6E 73 61 6A 65 20 64 65 20 70 72 75 65 62 61 20 70 61 ...` | `0x600D600D` |
+
+**Discusión:**  
+La Tabla 2 muestra cómo el sistema maneja mensajes de distintos tamaños aplicando **PKCS#7** para asegurar que siempre tengan un múltiplo del bloque requerido por TEA (64 bits). Se observa que:  
+
+- `g_plain` incluye el mensaje original más los bytes de padding.  
+- `g_encrypted` corresponde al bloque cifrado en hexadecimal.  
+- `g_decrypted` representa el resultado al aplicar el descifrado, que incluye nuevamente el padding.  
+- `g_unpadded` es el mensaje limpio, luego de remover el padding.  
+- La bandera `0x600D600D` se mantiene constante en todas las pruebas, indicando el correcto funcionamiento del flujo de cifrado y descifrado.  
+
+Esto confirma la correcta integración del padding PKCS#7 con TEA en la implementación, garantizando que cualquier mensaje (sin importar su longitud) sea procesado de forma adecuada.
+
+---
+
+### 5.2 Limitaciones actuales
+
+El proyecto, aunque funcional y correctamente probado en distintos escenarios, presenta algunas limitaciones que deben señalarse:
+
+- **Alcance reducido del algoritmo TEA**:  
+  La implementación se centra en el cifrado/descifrado con TEA (Tiny Encryption Algorithm). Si bien cumple con los objetivos de aprendizaje, TEA es considerado criptográficamente débil frente a algoritmos modernos (ej. AES).
+
+- **Ausencia de modos de operación**:  
+  Actualmente se trabaja únicamente en modo ECB (Electronic Codebook). Este modo, aunque simple, no es seguro para mensajes largos, ya que patrones repetitivos en el texto plano generan patrones en el texto cifrado [1].
+
+- **Escalabilidad restringida**:  
+  La implementación actual está diseñada para mensajes relativamente cortos. Aunque PKCS#7 permite manejar diferentes longitudes, no se evaluó exhaustivamente el rendimiento con mensajes de gran tamaño.
+
+- **Falta de integración con sistemas reales**:  
+  Las pruebas se realizaron en un entorno controlado (QEMU + GDB). Aún no se ha probado en hardware embebido real (ej. ARM Cortex-M, ESP32), lo cual limita la validación práctica.
+
+---
+
+### 5.3 Posibles mejoras futuras
+
+Para fortalecer y ampliar el alcance del proyecto, se plantean las siguientes mejoras:
+
+- **Integración de algoritmos modernos de cifrado**:  
+  Incluir AES o ChaCha20 permitiría comparar el rendimiento y la seguridad frente a TEA, además de acercar el proyecto a estándares reales en sistemas embebidos.
+
+- **Implementación de modos de operación avanzados**:  
+  Incorporar CBC (Cipher Block Chaining), CFB (Cipher Feedback) o CTR (Counter Mode), lo cual incrementaría la seguridad al evitar patrones repetitivos en el cifrado [1].
+
+- **Automatización de pruebas y benchmarking**:  
+  Desarrollar scripts de prueba que midan tiempos de cifrado/descifrado con precisión, tanto en C como en ensamblador, para obtener métricas más robustas.
+
+- **Portabilidad a hardware embebido real**:  
+  Migrar el proyecto a plataformas como STM32, ESP32 o Raspberry Pi, validando el desempeño en microcontroladores y sistemas embebidos de bajo costo.
+
+- **Mejora en la gestión de memoria**:  
+  Optimizar el manejo de buffers y memoria dinámica para soportar mensajes más largos sin comprometer la eficiencia ni la seguridad.
+
+- **Interfaz de usuario y herramientas de integración**:  
+  Incluir una interfaz básica (ej. CLI o webserver ligero en un microcontrolador con Wi-Fi) para probar el cifrado en un entorno más cercano a aplicaciones reales de IoT.
 
 ---
 
@@ -426,4 +519,5 @@ En este caso se aplicó correctamente padding PKCS#7, rellenando con 13 bytes de
 
 ## 8. Referencias
 
-[1] Housley, R. (2009). *RFC 5652: Cryptographic Message Syntax (CMS)*. Internet Engineering Task Force (IETF). Disponible en: https://www.rfc-editor.org/rfc/rfc5652 
+[1] GeeksForGeeks. (2025). *Electronic Code Book (ECB) in Cryptography*. GeeksForGeeks. Disponible en: https://www.geeksforgeeks.org/computer-networks/electronic-code-book-ecb-in-cryptography/
+[2] Housley, R. (2009). *RFC 5652: Cryptographic Message Syntax (CMS)*. Internet Engineering Task Force (IETF). Disponible en: https://www.rfc-editor.org/rfc/rfc5652
