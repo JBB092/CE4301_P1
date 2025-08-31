@@ -490,30 +490,204 @@ Para fortalecer y ampliar el alcance del proyecto, se plantean las siguientes me
 
 ## 6. Guía de Uso: Compilación, Ejecución y Pruebas
 
-* **6.1 Requisitos previos**
+Esta sección explica el procedimiento completo para compilar, ejecutar y depurar el proyecto dentro de un contenedor Docker que utiliza QEMU y GDB.  
 
-  * Instalación de `gcc`, `make`, `qemu`, `gdb`, etc.
-* **6.2 Compilación**
+---
 
-  * Ejemplo de comando con `make` o `gcc`
-* **6.3 Ejecución en QEMU**
+### 6.1 Requisitos previos
 
-  * Ejemplo de ejecución básica
-* **6.4 Depuración con GDB**
+Antes de ejecutar el proyecto, es necesario contar con lo siguiente instalado en la computadora:  
 
-  * Ejemplo de conexión con QEMU (`target remote`)
-* **6.5 Ejemplos de uso del sistema**
+- **Docker** (indispensable, ya que el proyecto corre en un contenedor).  
+- **Git** (para clonar el repositorio si aún no se tiene).  
+- **Un editor de texto** (ej. VSCode, Vim, Nano) para editar el mensaje y la llave (KEY) en el archivo `main.c`.  
 
-  * Entrada esperada
-  * Salida obtenida
+Dentro del archivo `main.c` se puede configurar tanto el mensaje a cifrar (bloque de entrada de 64 bits o dos palabras de 32 bits) como la llave de cifrado (128 bits):  
+
+**Figura 10. Configuración del mensaje y la `KEY` en `main.c`**
+![Figura 10. Configuración del mensaje y la KEY en main.c](./Media/figura10.png)
+
+---
+
+### 6.2 Compilación y arranque del entorno
+
+1. Abrir una terminal en la carpeta raíz del proyecto llamada `proyecto-tea`.  
+2. Dar permiso de ejecución al script `run.sh` y luego ejecutarlo:  
+
+```bash
+chmod +x ./run.sh
+./run.sh
+```
+
+**Figura 11. Ejecución del script `run.sh`**
+![Figura 11. Ejecución del script run.sh](./Media/figura11.png)
+
+Esto iniciará el contenedor Docker configurado para QEMU.
+
+3. Una vez dentro del contenedor, dar permisos al script `build.sh` y ejecutarlo para compilar el proyecto:
+
+```bash
+chmod +x ./build.sh
+./build.sh
+```
+
+**Figura 12. Compilación del proyecto con `build.sh`**
+![Figura 12. Compilación del proyecto con build.sh](./Media/figura12.png)
+
+4. Si la compilación no presenta errores, dar permisos al script `run-qemu.sh` y ejecutarlo para arrancar QEMU con soporte de GDB:
+
+```bash
+chmod +x ./run-qemu.sh
+./run-qemu.sh
+```
+**Figura 13. Ejecución del script `run-qemu.sh` para iniciar QEMU con GDB**
+![Figura 13. Ejecución del script run-qemu.sh para iniciar QEMU con GDB](./Media/figura13.png)
+
+---
+
+### 6.3 Conexión a QEMU y arranque de GDB
+
+En otra terminal, dentro de la misma carpeta `proyecto-tea`, conectarse al contenedor que ya está corriendo:
+
+```bash
+docker exec -it rvqemu /bin/bash
+```
+
+Dentro del contenedor, ejecutar:
+
+```bash
+gdb-multiarch test.elf
+```
+
+**Figura 14. Acceso al contenedor y arranque de GDB con `test.elf`**
+![Figura 14. Acceso al contenedor y arranque de GDB con test.elf](./Media/figura14.png)
+
+Una vez en GDB, conectarse al puerto 1234 que QEMU abrió previamente:
+
+```bash
+target remote :1234
+```
+
+**Figura 15. Conexión de GDB al puerto remoto de QEMU**
+![Figura 15. Conexión de GDB al puerto remoto de QEMU](./Media/figura15.png)
+
+---
+
+### 6.4 Comandos útiles en GDB
+
+A continuación se listan los principales comandos usados durante la depuración:
+
+#### Comandos generales
+
+* `break <funcion>` → Coloca un breakpoint en la función indicada.
+* `info breakpoints` → Muestra la lista de breakpoints activos.
+* `continue` → Continúa la ejecución hasta el siguiente breakpoint.
+* `next` → Ejecuta la siguiente línea de código (sin entrar en funciones).
+* `step` → Ejecuta la siguiente instrucción (entrando en funciones).
+* `info registers` → Muestra el estado actual de todos los registros.
+* `quit` → Salir de GDB.
+
+#### Comandos para inspección de variables del proyecto
+
+* `x/4wx &g_plain` → Visualiza el mensaje en claro.
+* `x/4wx &g_encrypted` → Visualiza el mensaje cifrado.
+* `x/4wx &g_decrypted` → Visualiza el mensaje descifrado.
+* `x/4wx &g_unpadded` → Visualiza el mensaje tras la eliminación del padding.
+* `p/x g_ok` → Indica si la operación de cifrado/descifrado fue correcta.
+
+---
+
+### 6.5 Sesión de depuración con GDB
+
+1. Colocar puntos de ruptura (breakpoints) en funciones clave:
+
+```bash
+break main
+break tea_encrypt_asm
+info breakpoints
+```
+
+**Figura 16. Breakpoints colocados en `main` y `tea_encrypt_asm`**
+![Figura 16. Breakpoints colocados en main y tea\_encrypt\_asm](./Media/figura16.png)
+
+2. Continuar la ejecución hasta llegar al `main`:
+
+```bash
+continue
+```
+
+Aquí se pueden observar los **registros** y las **variables en memoria**:
+
+```bash
+info registers
+```
+
+**Figura 17. Visualización de registros en el breakpoint de `main` (parte 1)**
+![Figura 17. Visualización de registros en el breakpoint de main](./Media/figura17.png)
+
+Si después de esto se presiona la tecla "c" en minúscula y se presiona la tecla enter, se podrán ver los demás registros presentados a continuación:
+
+**Figura 18. Visualización de registros en el breakpoint de `main` (parte 2)**
+![Figura 18. Visualización de registros en el breakpoint de main](./Media/figura18.png)
+
+Luego de esto, se pueden poner los siguientes comandos para visualizar las variables importantes en memoria:
+
+```bash
+x/4wx &g_plain
+x/4wx &g_encrypted
+x/4wx &g_decrypted
+x/4wx &g_unpadded
+p/x g_ok
+```
+
+**Figura 19. Visualización de variables en memoria en el breakpoint de `main`**
+![Figura 19. Visualización de variables en memoria en el breakpoint de main](./Media/figura19.png)
+
+1. Continuar hasta el breakpoint de la función en ensamblador `tea_encrypt_asm`:
+
+```bash
+continue
+```
+
+Nuevamente se pueden observar registros y variables en memoria:
+
+**Figura 20. Registros en la función `tea_encrypt_asm`**
+![Figura 20. Registros en la función tea\_encrypt\_asm](./Media/figura20.png)
+
+**Figura 21. Variables en memoria en la función `tea_encrypt_asm`**
+![Figura 21. Variables en memoria en la función tea\_encrypt\_asm](./Media/figura21.png)
+
+4. Avanzar paso a paso en la ejecución con:
+
+```bash
+next
+```
+
+**Figura 22. Avance paso a paso con `next`**
+![Figura 22. Avance paso a paso con next](./Media/figura22.png)
+
+5. O continuar hasta detenerse manualmente:
+
+```bash
+continue
+# Luego interrumpir con Ctrl + C
+```
+
+En este punto se alcanzará el ciclo infinito de finalización, donde se pueden inspeccionar nuevamente los registros y las variables:
+
+**Figura 23. Registros en el ciclo final**
+![Figura 23. Registros en el ciclo final](./Media/figura23.png)
+
+**Figura 24. Variables en memoria en el ciclo final**
+![Figura 24. Variables en memoria en el ciclo final](./Media/figura24.png)
+
+Para salir de la sesión, simplemente cerrar ambas terminales.
 
 ---
 
 ## 7. Conclusiones
 
-* **7.1 Principales aprendizajes del proyecto**
-* **7.2 Relevancia para la arquitectura de computadores**
-* **7.3 Reflexión personal / académica**
+El desarrollo de este proyecto permitió afianzar conocimientos tanto en la programación en C como en ensamblador, así como en el uso de herramientas de virtualización y depuración como QEMU y GDB, fundamentales en la ingeniería de computadores. La implementación del algoritmo TEA y el manejo del ciclo completo de cifrado y descifrado mostraron la importancia de comprender a bajo nivel el flujo de datos, la administración de memoria y el control del hardware simulado. Además, la experiencia de integrar distintas tecnologías dentro de un entorno controlado de Docker facilitó el entendimiento de la portabilidad y reproducibilidad en proyectos de sistemas. En el contexto de la arquitectura de computadores, este trabajo evidencia cómo los conceptos teóricos sobre registros, memoria, instrucciones y flujo de ejecución encuentran aplicación práctica directa. Finalmente, la experiencia permitió no solo mejorar habilidades técnicas en depuración y diseño, sino también desarrollar una reflexión crítica sobre la importancia de la rigurosidad y la disciplina en el proceso de construcción de software embebido y sistemas de bajo nivel, aprendizajes esenciales tanto en el ámbito académico como profesional.
 
 ---
 
