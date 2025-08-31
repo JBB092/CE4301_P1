@@ -273,20 +273,113 @@ flowchart TD
 > * La verificación de padding **no depende del endianness**; sólo requiere tratar el mensaje como flujo de bytes y ser consistente al empaquetar/desempaquetar bloques hacia/desde `v0`/`v1`.
 > * En GDB, es práctico colocar breakpoints en: inicio/fin de la rutina TEA, y justo antes de la validación PKCS#7 para observar el buffer descifrado.
 
+---
+
+## 4. Evidencias de Ejecución (QEMU y GDB)
+
+En esta sección se presentan las evidencias de la correcta ejecución del sistema en QEMU y la depuración paso a paso con GDB.  
+Todas las capturas de pantalla se encuentran en la carpeta `./Media/` y se muestran en orden cronológico.
 
 ---
 
-## 4. Evidencias de Ejecución (GDB y QEMU)
+### 4.1 Ejecución en QEMU
 
-* **4.1 Ejecución en QEMU**
+#### 4.1.1 Ejecución inicial
 
-  * 4.1.1 Capturas de pantalla o logs de ejecución
-  * 4.1.2 Explicación de la salida obtenida
-* **4.2 Debugging con GDB**
+La Figura 1 muestra la salida obtenida al ejecutar el script `./run-qemu.sh`, donde se observa la el inicio del "servidor" QEMU usando el puerto 1234 para conectarse usando GDB.
 
-  * 4.2.1 Ejemplo de sesión GDB paso a paso
-  * 4.2.2 Breakpoints utilizados
-  * 4.2.3 Validación de resultados (registros, memoria, etc.)
+![Figura 1. Ejecución del programa en QEMU](./Media/figura1.png)  
+
+Esto muestra el uso de QEMU para poder trabajar con GDB y depurar.
+
+---
+
+### 4.2 Depuración con GDB
+
+#### 4.2.1 Conexión con el puerto de escucha
+
+Para depurar el programa en QEMU, se utiliza el siguiente procedimiento:  
+1. Ejecutar en la terminal el comando `docker exec -it rvqemu /bin/bash`, para utilizar el mismo contenedor.
+2. Dentro del contenedor utilizar el comando `gdb-multiarch test.elf` para poder usar el archivo ejecutable.   
+3. Conectar GDB al puerto remoto con `target remote :1234`.
+
+La Figura 2 muestra la conexión exitosa entre GDB y QEMU.
+
+![Figura 2. Conexión de GDB al puerto remoto de QEMU](./Media/figura2.png)  
+
+Se confirma la sincronización con el mensaje `Remote debugging using :1234`.
+
+---
+
+#### 4.2.2 Establecimiento de breakpoints
+
+Se definieron breakpoints estratégicos en funciones clave del flujo de ejecución, tanto en C como en ensamblador.  
+La lista completa se muestra en la Figura 3, obtenida con el comando `info breakpoints`:
+
+- **main** (`src/main.c:44`)  
+- **pkcs7_pad** (`src/padding.c:15`)  
+- **pack_le** (`src/main.c:26`)  
+- **tea_encrypt** (`src/tea_encrypt.s:12`)  
+- **unpack_le** (`src/main.c:34`)  
+- **tea_decrypt** (`src/tea_decrypt.s:11`)  
+- **pkcs7_unpad** (`src/padding.c:39`)  
+
+![Figura 3. Breakpoints definidos en funciones principales](./Media/figura3.png)  
+
+Estos breakpoints permiten detener la ejecución en los puntos más relevantes del ciclo de **padding, empaquetado, cifrado, desempaquetado, descifrado y eliminación del padding**, lo que facilita el análisis paso a paso del algoritmo completo.
+
+---
+
+#### 4.2.3 Inspección de registros y memoria antes de la ejecución
+
+Antes de la ejecución de la función de cifrado y descifrado, se inspeccionaron tanto registros como memoria.  
+Los comandos utilizados fueron:
+
+La Figura 4 muestra el estado de los registros antes de iniciar la función de cifrado.
+
+![Figura 4. Registros antes de ejecutar encrypt\_block](./Media/figura4.png)
+
+La Figura 5 muestra el contenido de las variables en memoria antes del proceso de cifrado.
+
+![Figura 5. Variables en memoria antes del cifrado](./Media/figura5.png)
+
+---
+
+#### 4.2.4 Inspección de registros y memoria después de la ejecución
+
+Luego de ejecutar completamente las funciones de cifrado y descifrado, se repitió la inspección.
+
+La Figura 6 muestra el estado de los registros al finalizar el proceso.
+
+![Figura 6. Registros después de la ejecución completa](./Media/figura6.png)
+
+La Figura 7 muestra las variables en memoria tras todo el proceso, evidenciando el correcto padding, cifrado, descifrado y recuperación del mensaje original.
+
+![Figura 7. Variables en memoria después del cifrado y descifrado](./Media/figura7.png)
+
+---
+
+#### 4.2.5 Ejemplos con mensajes de distinta longitud
+
+Para validar el correcto funcionamiento del padding (PKCS#7), se probaron dos casos específicos:
+
+##### Caso A: Mensaje de 16 bytes ("MICROCONTROLADOR")
+
+La Figura 8 muestra la salida en memoria para las variables `g_plain`, `g_encrypted` y `g_decrypted` al procesar el mensaje de 16 bytes.
+
+![Figura 8. Ejemplo con mensaje de 16 bytes ("MICROCONTROLADOR")](./Media/figura7.png)
+
+En este caso no se aplica padding adicional, ya que la longitud es múltiplo del bloque de 16 bytes.
+
+---
+
+##### Caso B: Mensaje de 3 bytes ("TEC")
+
+La Figura 9 muestra la salida en memoria para las variables `g_plain`, `g_encrypted` y `g_decrypted` al procesar el mensaje de 3 bytes.
+
+![Figura 9. Ejemplo con mensaje de 3 bytes ("TEC")](./Media/figura8.png)
+
+En este caso se aplicó correctamente padding PKCS#7, rellenando con 13 bytes de valor `0x0D`, lo que permite completar el bloque de 16 bytes y validar posteriormente la correcta eliminación del padding tras el descifrado.
 
 ---
 

@@ -1,12 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "tea.h"
-#include "padding.h"   // integración del padding PKCS#7
+#include "padding.h"  
 
-/* CONFIGURACIÓN DEL TEST */
-
-/* Cambia aquí el mensaje de prueba */
-static const uint8_t MSG[] = "Mensaje de prueba para TEA";   // cambiar mensaje por cualquiera
+/* Cambiar aquí el mensaje de prueba */
+static const uint8_t MSG[] = "TEC";   // cambiar mensaje por cualquiera
 static const size_t MSG_LEN = sizeof(MSG) - 1; // quitar '\0'
 
 /* Clave de 128 bits (4 x 32 bits) */
