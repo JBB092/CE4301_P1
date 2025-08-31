@@ -1,3 +1,13 @@
+/*
+================================== LICENCIA ==============
+====================================
+MIT License
+Copyright (c) 2025 José Bernardo Barquero Bonilla
+Consulta el archivo LICENSE para más detalles.
+=======================================================
+=======================================
+*/
+
 #ifndef PADDING_H
 #define PADDING_H
 
