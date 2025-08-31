@@ -691,7 +691,13 @@ El desarrollo de este proyecto permitió afianzar conocimientos tanto en la prog
 
 ---
 
-## 8. Referencias
+## 8. Disclaimer
+
+Durante el desarrollo de este proyecto se hizo uso de herramientas de Inteligencia Artificial, tales como *ChatGPT* y *GitHub Copilot*, con el objetivo de apoyar la documentación del código y la redacción de archivos en formato Markdown. Estas herramientas fueron empleadas principalmente para mejorar la estructura, la presentación, la ortografía y la claridad del contenido escrito. Asimismo, en algunos casos se recurrió a ellas para sugerir optimizaciones menores en el código, como el uso de variables constantes u otras buenas prácticas de programación, siempre bajo supervisión y criterio propio. Cabe destacar que todas las decisiones de diseño, implementación y validación fueron tomadas de manera consciente y responsable por el autor del proyecto, utilizando la IA únicamente como un recurso de apoyo y no como sustituto del aprendizaje o la ejecución práctica.
+
+---
+
+## Referencias
 
 [1] GeeksForGeeks. (2025). *Electronic Code Book (ECB) in Cryptography*. GeeksForGeeks. Disponible en: https://www.geeksforgeeks.org/computer-networks/electronic-code-book-ecb-in-cryptography/
 [2] Housley, R. (2009). *RFC 5652: Cryptographic Message Syntax (CMS)*. Internet Engineering Task Force (IETF). Disponible en: https://www.rfc-editor.org/rfc/rfc5652
