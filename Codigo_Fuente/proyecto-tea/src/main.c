@@ -1,3 +1,13 @@
+/*
+================================== LICENCIA ==============
+====================================
+MIT License
+Copyright (c) 2025 José Bernardo Barquero Bonilla
+Consulta el archivo LICENSE para más detalles.
+=======================================================
+=======================================
+*/
+
 #include <stdint.h>
 #include <stddef.h>
 #include "tea.h"
@@ -40,10 +50,10 @@ static inline void unpack_le(uint32_t w, uint8_t *out) {
 /* PROGRAMA PRINCIPAL */
 
 int main(void) {
-    /* --- 1. Aplicar padding --- */
+    /* Aplicar padding */
     size_t padded_len = pkcs7_pad(MSG, MSG_LEN, 8, (uint8_t*)g_plain);
 
-    /* --- 2. Cifrar bloque por bloque (8 bytes = 2 words de 32 bits) --- */
+    /* Cifrar bloque por bloque (8 bytes = 2 words de 32 bits) */
     for (size_t i = 0; i < padded_len; i += 8) {
         uint32_t v[2];
         v[0] = pack_le(g_plain[i], g_plain[i+1], g_plain[i+2], g_plain[i+3]);
@@ -55,7 +65,7 @@ int main(void) {
         unpack_le(v[1], &((uint8_t*)g_encrypted)[i+4]);
     }
 
-    /* --- 3. Descifrar bloque por bloque --- */
+    /* Descifrar bloque por bloque */
     for (size_t i = 0; i < padded_len; i += 8) {
         uint32_t w[2];
         w[0] = pack_le(g_encrypted[i], g_encrypted[i+1], g_encrypted[i+2], g_encrypted[i+3]);
@@ -67,10 +77,10 @@ int main(void) {
         unpack_le(w[1], &((uint8_t*)g_decrypted)[i+4]);
     }
 
-    /* --- 4. Remover padding --- */
+    /* Remover padding */
     size_t unpadded_len = pkcs7_unpad((uint8_t*)g_decrypted, padded_len, 8, (uint8_t*)g_unpadded);
 
-    /* --- 5. Verificación --- */
+    /* Verificación */
     g_ok = 0xDEADDEADu; // asume error por defecto
     if (unpadded_len == MSG_LEN) {
         g_ok = 0x600D600Du;   // "GOOD"
