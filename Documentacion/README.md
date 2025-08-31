@@ -168,13 +168,111 @@ flowchart TD
 
 ## 3. Funcionalidades Implementadas
 
-* **3.1 Descripción general de las funcionalidades**
-* **3.2 Flujo de ejecución principal**
+### 3.1 Descripción general de las funcionalidades
 
-  * 3.2.1 Entrada de datos
-  * 3.2.2 Procesamiento
-  * 3.2.3 Salida de resultados
-* **3.3 Casos de uso o escenarios de ejemplo**
+El sistema implementa el **algoritmo de cifrado/descifrado TEA (Tiny Encryption Algorithm)** sobre arquitectura RISC-V en QEMU, con **padding PKCS#7** para procesar mensajes de longitud arbitraria. La división de responsabilidades es:
+
+* **C (orquestación y pruebas):**
+
+  * Segmenta el mensaje en bloques de **8 bytes** (tamaño de bloque TEA).
+  * Aplica **PKCS#7** al último bloque (o añade un bloque completo si la longitud es múltiplo de 8).
+  * Invoca las rutinas en ensamblador para **cifrar/descifrar** bloque a bloque.
+  * Tras el descifrado, **valida y elimina** el padding PKCS#7.
+  * Muestra resultados intermedios/finales en la consola de QEMU.
+
+* **Ensamblador RISC-V (núcleo TEA):**
+
+  * Implementa TEA a nivel de registros (sumas mod 2³², XOR, corrimientos).
+  * Procesa cada bloque de 64 bits como dos palabras de 32 bits (`v0`, `v1`).
+  * Respeta la **ABI RISC-V** para paso/retorno de parámetros (p. ej., `a0–a3`, retorno en `a0/a1` o mediante buffer, según diseño).
+
+> **Por qué PKCS#7:** garantiza que el relleno sea **no ambiguo** y reversible, incluso cuando el mensaje ya es múltiplo del bloque (en ese caso se añade un bloque de 8 bytes con valor `0x08`), cumpliendo prácticas estándar de padding para cifrados por bloques [1].
+
+---
+
+### 3.2 Flujo de ejecución principal
+
+#### 3.2.1 Entrada de datos
+
+* **Datos de entrada en C:**
+
+  * Mensaje arbitrario (flujo de bytes).
+  * **Clave de 128 bits** (4 palabras de 32 bits).
+* **Preparación con PKCS#7:**
+
+  * `padLen = 8 - (len % 8)`; si `len % 8 == 0`, entonces `padLen = 8`.
+  * Se **anexan `padLen` bytes**, cada uno con el **valor `padLen`**.
+  * Se calcula `len_padded = len + padLen`.
+* El mensaje acolchado se divide en bloques de 8 bytes para pasar a las rutinas en ASM.
+
+#### 3.2.2 Procesamiento
+
+* **Cifrado (ASM):**
+
+  * Para cada bloque de 8 bytes, se empaqueta en dos `uint32_t` (`v0`, `v1`) de forma consistente entre cifrado y descifrado.
+  * Se ejecutan **32 rondas** (64 operaciones elementales) del ciclo TEA con la clave de 128 bits (constante `delta` incluida).
+  * El resultado sustituye al bloque en el buffer de salida.
+* **Descifrado (ASM):**
+
+  * Se aplica el ciclo TEA en orden inverso para recuperar `v0`, `v1` originales por bloque.
+* **Despadding (C):**
+
+  * Se lee el **último byte** `val` del buffer descifrado; debe cumplir `1 ≤ val ≤ 8`.
+  * Se verifica que **los últimos `val` bytes** sean exactamente `val`.
+  * Si es válido, se **eliminan** esos bytes y se restaura la longitud original; si no, se **reporta error de padding** (entrada corrupta o clave incorrecta).
+
+#### 3.2.3 Salida de resultados
+
+* C imprime en la consola de QEMU:
+
+  * **Texto cifrado** (p. ej., en hex por bloque).
+  * **Texto descifrado** y verificación de igualdad con el mensaje original.
+* En depuración con GDB, se inspeccionan registros/memoria tras rondas clave y antes/después del despadding.
+
+---
+
+### 3.3 Casos de uso o escenarios de ejemplo
+
+1. **Mensaje no múltiplo de 8 (padding típico):**
+
+   * Mensaje de, por ejemplo, 13 bytes → `padLen = 3` → se añaden `0x03 0x03 0x03`.
+   * Cifrado en ASM, impresión del ciphertext; descifrado y validación del padding `0x03`.
+   * El mensaje recuperado coincide con el original.
+
+2. **Mensaje múltiplo de 8 (bloque completo de padding):**
+
+   * Mensaje de 16 bytes → `padLen = 8` → se añade bloque completo `0x08…0x08`.
+   * Descifrado elimina correctamente los 8 bytes de padding y devuelve 16 bytes originales.
+
+3. **Padding inválido (detección de error):**
+
+   * Forzando un cambio en el último byte del ciphertext, el descifrado produce **padding no válido**.
+   * La validación en C detecta el error y retorna código/estado de fallo (p. ej., `PKCS7_INVALID`), evitando usar datos corruptos.
+
+---
+
+### 3.4 Diagrama del flujo con PKCS#7 + TEA
+
+```mermaid
+flowchart TD
+    A["Entrada: mensaje (bytes) y clave (128 bits)"] --> B["Calcular padLen y aplicar PKCS#7"]
+    B --> C["Particionar en bloques de 8 bytes"]
+    C --> D["Cifrar bloque a bloque con TEA (ASM)"]
+    D --> E["Concatenar bloques cifrados (ciphertext)"]
+    E --> F["Descifrar bloque a bloque con TEA (ASM)"]
+    F --> G["Validar ultimo byte y PKCS#7"]
+    G --> H["Eliminar padding y recuperar mensaje original"]
+```
+
+---
+
+> **Notas de implementación útiles para la lectura del código:**
+>
+> * El **padding/unpadding** se implementa en **C** (claridad y menor propensión a errores).
+> * Las **rutinas TEA** están en **ASM** para cumplir el objetivo del curso y observar el comportamiento a nivel de registros.
+> * La verificación de padding **no depende del endianness**; sólo requiere tratar el mensaje como flujo de bytes y ser consistente al empaquetar/desempaquetar bloques hacia/desde `v0`/`v1`.
+> * En GDB, es práctico colocar breakpoints en: inicio/fin de la rutina TEA, y justo antes de la validación PKCS#7 para observar el buffer descifrado.
+
 
 ---
 
@@ -234,3 +332,5 @@ flowchart TD
 ---
 
 ## 8. Referencias
+
+[1] Housley, R. (2009). *RFC 5652: Cryptographic Message Syntax (CMS)*. Internet Engineering Task Force (IETF). Disponible en: https://www.rfc-editor.org/rfc/rfc5652 
