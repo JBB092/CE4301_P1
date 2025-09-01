@@ -32,19 +32,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Compilar syscalls.c
-riscv64-unknown-elf-gcc \
-    -march=rv32im \
-    -mabi=ilp32 \
-    -nostdlib \
-    -ffreestanding \
-    -g3 -gdwarf-4 \
-    -c src/syscalls.c -o syscalls.o
-if [ $? -ne 0 ]; then
-    echo "Error en la compilación de syscalls.c"
-    exit 1
-fi
-
 # Compilar uart.c
 riscv64-unknown-elf-gcc \
     -march=rv32im \
@@ -58,7 +45,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Compilar print.c (nuestra implementación de printf)
+# Compilar print.c 
 riscv64-unknown-elf-gcc \
     -march=rv32im \
     -mabi=ilp32 \
@@ -78,13 +65,13 @@ riscv64-unknown-elf-gcc \
     -nostdlib \
     -ffreestanding \
     -g3 -gdwarf-4 \
-    startup.o main.o syscalls.o uart.o print.o \
+    startup.o main.o uart.o print.o \
     -T linker.ld \
     -o test.elf
 
 if [ $? -eq 0 ]; then
     echo "Compilación y enlace exitoso: test.elf generado"
-    echo "Archivos objeto: startup.o, main.o, syscalls.o, uart.o, print.o"
+    echo "Archivos objeto: startup.o, main.o, uart.o, print.o"
 else
     echo "Error en el enlace"
     exit 1
