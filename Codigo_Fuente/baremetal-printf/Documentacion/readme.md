@@ -60,18 +60,101 @@ Este enfoque garantiza una forma sencilla pero funcional de obtener salida por c
 - **Shell scripts** para automatizar tareas.
 
 ### 3.2 Estructura del proyecto
-Adjuntar la estructura del proyecto y explicar brevemente el rol de cada archivo
+
+La organización del proyecto se realizó de forma modular, separando el código fuente, los scripts de compilación/ejecución y la documentación.  
+A continuación se muestra la estructura general:
+
+```
+
+baremetal-printf/
+├── build.sh
+├── Dockerfile
+├── linker.ld
+├── main.o
+├── print.o
+├── run-direct.sh
+├── run-qemu.sh
+├── run.sh
+├── startup.o
+├── test.elf
+├── uart.o
+├── src/
+│   ├── main.c
+│   ├── print.c
+│   ├── print.h
+│   ├── startup.s
+│   ├── uart.c
+│   └── uart.h
+└── Documentacion/
+    └── readme.md
+
+```
+
+#### Explicación de los archivos
+
+- **build.sh**  
+  Script de compilación que invoca el compilador cruzado `arm-none-eabi-gcc`, enlaza los objetos y genera el binario final (`test.elf`).  
+
+- **Dockerfile**  
+  Define el entorno de compilación dentro de un contenedor Docker, asegurando que las herramientas necesarias (toolchain ARM, QEMU, GDB) estén disponibles y en la versión correcta.  
+
+- **linker.ld**  
+  Script de *linker* que especifica cómo se organizan las secciones de memoria (código, datos, pila) en el ejecutable bare-metal.  
+
+- **main.o, print.o, startup.o, uart.o**  
+  Archivos objeto generados tras la compilación de los fuentes en `src/`. No deben editarse manualmente.  
+
+- **test.elf**  
+  Binario final en formato ELF que contiene el programa completo y es cargado en QEMU.  
+
+- **run-direct.sh**  
+  Script de prueba para ejecutar el binario directamente en QEMU sin opciones avanzadas.  
+
+- **run-qemu.sh**  
+  Script de ejecución estándar en QEMU, configurado con parámetros adecuados para emular la plataforma ARM.  
+
+- **run.sh**  
+  Script general que automatiza el flujo completo: compilar y luego ejecutar el programa en QEMU.  
+
+---
+
+#### Carpeta `src/`
+
+- **main.c**  
+  Programa principal. Contiene la lógica de prueba y llamadas a la función `printf` minimalista para verificar su funcionamiento.  
+
+- **print.c**  
+  Implementación del `printf` minimalista, junto con funciones auxiliares para formateo de enteros y cadenas.  
+
+- **print.h**  
+  Archivo de cabecera que declara las funciones disponibles en `print.c`.  
+
+- **startup.s**  
+  Código de arranque en ensamblador: inicializa la pila, vectores de interrupción y transfiere el control a `main`.  
+
+- **uart.c**  
+  Implementa las rutinas de comunicación a través del UART (en este caso, redirigido por QEMU a la consola del host).  
+
+- **uart.h**  
+  Cabecera de `uart.c`, declara las funciones de envío/recepción de caracteres.  
+
+---
+
+#### Carpeta `Documentacion/`
+
+- **readme.md**  
+  Documento donde se incluye la descripción general del proyecto, instrucciones de uso y detalles relevantes de la implementación.  
 
 ---
 
 ## 4. Implementación
-Hablarsobre las cosas que se implementaron y cómo, además de adjuntar diagramas de flujo, u otro tipo, que permitan explicar mejor las cosas
+Hablar sobre las cosas que se implementaron y cómo, además de adjuntar diagramas de flujo, u otro tipo, que permitan explicar mejor las cosas
 
 ---
 
 ## 5. Disclaimer
 
-Este documento se apoyó en herramientas de IA (ChatGPT, GitHub Copilot) para redacción, corrección y organización, manteniendo control humano en diseño y decisiones técnicas.
+Este documento se apoyó en herramientas de IA (ChatGPT, GitHub Copilot) para redacción, corrección y organización; manteniendo control humano en diseño y decisiones técnicas.
 
 ---
 
