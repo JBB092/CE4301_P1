@@ -1,11 +1,8 @@
 /*
-================================== LICENCIA ==============
-====================================
+LICENCIA 
 MIT License
 Copyright (c) 2025 José Bernardo Barquero Bonilla
 Consulta el archivo LICENSE para más detalles.
-=======================================================
-=======================================
 */
 
 #include <stdint.h>
@@ -13,8 +10,11 @@ Consulta el archivo LICENSE para más detalles.
 #include "tea.h"
 #include "padding.h"  
 
+#include "print.h"
+#include "print_hex.h"
+
 /* Cambiar aquí el mensaje de prueba */
-static const uint8_t MSG[] = "TEC";   // cambiar mensaje por cualquiera
+static const uint8_t MSG[] = "Hola profe desde QEMU";   // cambiar mensaje por cualquiera
 static const size_t MSG_LEN = sizeof(MSG) - 1; // quitar '\0'
 
 /* Clave de 128 bits (4 x 32 bits) */
@@ -86,8 +86,17 @@ int main(void) {
         g_ok = 0x600D600Du;   // "GOOD"
     }
 
+    print("Mensaje inicial: %s\n", MSG);
+
+    print("g_ok como texto: %d\n", g_ok);
+    print_hex("g_plain (HEX): ", (const uint8_t*)g_plain, padded_len);
+    print_hex("g_encrypted (HEX): ", (const uint8_t*)g_encrypted, padded_len);
+    print_hex("g_decrypted (HEX): ", (const uint8_t*)g_decrypted, padded_len);
+    print_hex("g_unpadded (HEX): ", (const uint8_t*)g_unpadded, unpadded_len);
+
+    print("Mensaje final (g_unpadded): %s\n", g_unpadded);
+
     /* Loop infinito para poder inspeccionar con GDB */
     for (;;);
 
-    // return 0; // nunca llega
 }
