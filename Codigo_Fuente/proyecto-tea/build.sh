@@ -3,7 +3,7 @@
 
 # Limpiar archivos objeto y ejecutable previos para evitar mezclas
 echo "Limpiando archivos objeto y ejecutable previos..."
-rm -f startup.o tea_decrypt.o tea_encrypt.o main.o test.elf
+rm -f *.o test.elf
 
 echo "Compilando proyecto TEA con funciones ASM..."
 
@@ -104,6 +104,45 @@ else
     OBJ_EXTRA="tea_encrypt.o tea_decrypt.o"
 fi
 
+# Compilar uart.c
+riscv64-unknown-elf-gcc \
+    -march=rv32im \
+    -mabi=ilp32 \
+    -nostdlib \
+    -ffreestanding \
+    -g3 -gdwarf-4 \
+    -c src/uart.c -o uart.o
+if [ $? -ne 0 ]; then
+    echo "Error en la compilación de uart.c"
+    exit 1
+fi
+
+# Compilar print.c 
+riscv64-unknown-elf-gcc \
+    -march=rv32im \
+    -mabi=ilp32 \
+    -nostdlib \
+    -ffreestanding \
+    -g3 -gdwarf-4 \
+    -c src/print.c -o print.o
+if [ $? -ne 0 ]; then
+    echo "Error en la compilación de print.c"
+    exit 1
+fi
+
+# Compilar print_hex.c
+riscv64-unknown-elf-gcc \
+    -march=rv32im \
+    -mabi=ilp32 \
+    -nostdlib \
+    -ffreestanding \
+    -g3 -gdwarf-4 \
+    -c src/print_hex.c -o print_hex.o
+if [ $? -ne 0 ]; then
+    echo "Error en la compilación de print_hex.c"
+    exit 1
+fi
+
 # Enlazar objetos en test.elf
 riscv64-unknown-elf-gcc \
     -march=rv32im \
@@ -111,7 +150,7 @@ riscv64-unknown-elf-gcc \
     -nostdlib \
     -ffreestanding \
     -g3 -gdwarf-4 \
-    startup.o main.o padding.o ${OBJ_EXTRA} \
+    startup.o main.o padding.o uart.o print.o print_hex.o ${OBJ_EXTRA} \
     -T linker.ld \
     -o test.elf
 
