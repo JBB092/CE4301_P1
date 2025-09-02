@@ -11,9 +11,10 @@ Consulta el archivo LICENSE para más detalles.
 #include "padding.h"  
 
 #include "print.h"
+#include "print_hex.h"
 
 /* Cambiar aquí el mensaje de prueba */
-static const uint8_t MSG[] = "TEC";   // cambiar mensaje por cualquiera
+static const uint8_t MSG[] = "Hola profe desde QEMU";   // cambiar mensaje por cualquiera
 static const size_t MSG_LEN = sizeof(MSG) - 1; // quitar '\0'
 
 /* Clave de 128 bits (4 x 32 bits) */
@@ -85,32 +86,17 @@ int main(void) {
         g_ok = 0x600D600Du;   // "GOOD"
     }
 
-    // Imprimir g_ok inicial
-    print("g_ok inicial: %x\n", g_ok);
+    print("Mensaje inicial: %s\n", MSG);
 
-    // Imprimir g_plain
-    print("g_plain: ");
-    for (size_t i = 0; i < padded_len; i++) {
-        print("%x ", g_plain[i]);
-    }
-    print("\n");
+    print("g_ok como texto: %d\n", g_ok);
+    print_hex("g_plain (HEX): ", (const uint8_t*)g_plain, padded_len);
+    print_hex("g_encrypted (HEX): ", (const uint8_t*)g_encrypted, padded_len);
+    print_hex("g_decrypted (HEX): ", (const uint8_t*)g_decrypted, padded_len);
+    print_hex("g_unpadded (HEX): ", (const uint8_t*)g_unpadded, unpadded_len);
 
-    // Imprimir g_encrypted (antes de cifrar, estará vacío o basura)
-    print("g_encrypted (antes): ");
-    for (size_t i = 0; i < padded_len; i++) {
-        print("%x ", g_encrypted[i]);
-    }
-    print("\n");
-
-    // Imprimir g_decrypted (antes de descifrar, estará vacío o basura)
-    print("g_decrypted (antes): ");
-    for (size_t i = 0; i < padded_len; i++) {
-        print("%x ", g_decrypted[i]);
-    }
-    print("\n");
+    print("Mensaje final (g_unpadded): %s\n", g_unpadded);
 
     /* Loop infinito para poder inspeccionar con GDB */
     for (;;);
 
-    // return 0; // nunca llega
 }
