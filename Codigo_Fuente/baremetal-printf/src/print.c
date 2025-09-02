@@ -1,9 +1,20 @@
+/*
+LICENCIA 
+MIT License
+Copyright (c) 2025 José Bernardo Barquero Bonilla
+Consulta el archivo LICENSE para más detalles.
+*/
+
 #include "print.h"
 #include "uart.h"
 #include <stdarg.h>
 #include <stdint.h>
 
-// Función auxiliar: imprimir un entero decimal
+/**
+ * @brief Imprime un número entero decimal por UART.
+ * 
+ * @param value Valor entero a imprimir.
+ */
 static void print_dec(int value) {
     char buffer[16];
     int i = 0;
@@ -28,7 +39,11 @@ static void print_dec(int value) {
     }
 }
 
-// Función auxiliar: imprimir entero en hexadecimal
+/**
+ * @brief Imprime un número entero sin signo en formato hexadecimal por UART.
+ * 
+ * @param value Valor entero sin signo a imprimir.
+ */
 static void print_hex(unsigned int value) {
     const char *hex_chars = "0123456789ABCDEF";
     uart_puts("0x");
@@ -37,7 +52,19 @@ static void print_hex(unsigned int value) {
     }
 }
 
-// Implementación reducida de printf (soporta %s, %d, %x, %c)
+/**
+ * @brief Implementación reducida de printf para sistemas baremetal.
+ * 
+ * Soporta los siguientes especificadores de formato:
+ *   %s - Cadena de caracteres
+ *   %d - Entero decimal
+ *   %x - Entero hexadecimal
+ *   %c - Carácter
+ *   %% - Símbolo de porcentaje
+ * 
+ * @param fmt Cadena de formato.
+ * @param ... Argumentos variables según el formato.
+ */
 void print(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
