@@ -10,6 +10,8 @@ Consulta el archivo LICENSE para más detalles.
 #include "tea.h"
 #include "padding.h"  
 
+#include "print.h"
+
 /* Cambiar aquí el mensaje de prueba */
 static const uint8_t MSG[] = "TEC";   // cambiar mensaje por cualquiera
 static const size_t MSG_LEN = sizeof(MSG) - 1; // quitar '\0'
@@ -82,6 +84,30 @@ int main(void) {
     if (unpadded_len == MSG_LEN) {
         g_ok = 0x600D600Du;   // "GOOD"
     }
+
+    // Imprimir g_ok inicial
+    print("g_ok inicial: %x\n", g_ok);
+
+    // Imprimir g_plain
+    print("g_plain: ");
+    for (size_t i = 0; i < padded_len; i++) {
+        print("%x ", g_plain[i]);
+    }
+    print("\n");
+
+    // Imprimir g_encrypted (antes de cifrar, estará vacío o basura)
+    print("g_encrypted (antes): ");
+    for (size_t i = 0; i < padded_len; i++) {
+        print("%x ", g_encrypted[i]);
+    }
+    print("\n");
+
+    // Imprimir g_decrypted (antes de descifrar, estará vacío o basura)
+    print("g_decrypted (antes): ");
+    for (size_t i = 0; i < padded_len; i++) {
+        print("%x ", g_decrypted[i]);
+    }
+    print("\n");
 
     /* Loop infinito para poder inspeccionar con GDB */
     for (;;);
